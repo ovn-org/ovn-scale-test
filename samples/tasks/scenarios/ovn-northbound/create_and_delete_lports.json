@@ -1,0 +1,41 @@
+{
+    "version": 2,
+    "title": "Create and delete logical port",
+    "description": "Creates and delete logical port in OVN northbound",
+    "tags": ["ovn", "northbound"],
+
+
+    "subtasks": [
+        {
+            "title": "Create and delete logical port",
+            "group": "ovn",
+            "description": "Creates and delete logical port in OVN northbound",
+            "tags": ["ovn", "northbound"],
+            "run_in_parallel": false,
+
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.create_and_delete_lport",
+                    "args": {
+                        "lswitch_create_args": {
+                            "amount": 2
+                        },
+                        "lport_create_args" : {},
+                        "lports_per_lswitch": 2
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1,
+                        "concurrency": 4,
+                        "max_cpu_count": 2
+                    },
+                    "context": {
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

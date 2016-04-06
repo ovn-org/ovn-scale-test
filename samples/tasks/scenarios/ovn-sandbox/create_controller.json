@@ -1,0 +1,22 @@
+{
+    "version": 2,
+    "title": "Create controller",
+    "subtasks": [{
+        "title": "Create controller",
+        "workloads": [{
+            "name": "OvnSandbox.create_controller",
+            "args": {
+                "controller_create_args": {
+                    "controller_cidr": "192.168.10.10/16",
+                    "net_dev": "eth1"
+                }
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+               "ovn_multihost" : {
+                    "controller": "ovn-controller-node"
+                }
+            }
+        }]
+    }]
+}

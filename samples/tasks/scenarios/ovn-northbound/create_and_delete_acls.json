@@ -1,0 +1,22 @@
+{
+    "version": 2,
+    "title": "Create ACLs",
+    "subtasks": [{
+        "title": "Create ACLs",
+        "workloads": [{
+            "name": "OvnNorthbound.create_and_delete_acl",
+            "args": {
+                "acl_create_args" : {
+                    "direction": "to-lport",
+                    "action":"allow"},
+                "acls_per_port": 2
+
+            },
+            "runner": { "type": "serial", "times": 1},
+            "context": {
+               "ovn_multihost" : {"controller": "ovn-controller-node"},
+               "ovn_nb": {}
+            }
+        }]
+    }]
+}

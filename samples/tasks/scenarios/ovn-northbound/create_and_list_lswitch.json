@@ -1,0 +1,19 @@
+{
+    "OvnNorthbound.create_and_list_lswitch": [
+        {
+            "args": {
+                "lswitch_create_args": {}
+            },
+            "runner": {
+                "type": "serial",
+                "times": 100,
+                "concurrency": 10
+            },
+            "context": {
+                "ovn_sandbox": {
+                    "foo": 3
+                }
+            }
+        }
+    ]
+}

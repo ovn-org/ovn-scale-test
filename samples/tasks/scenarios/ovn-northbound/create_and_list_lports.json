@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "title": "Create logical port",
+    "subtasks": [{
+        "title": "Create logical port",
+        "workloads": [{
+            "name": "OvnNorthbound.create_and_list_lports",
+            "args": {
+                "lswitch_create_args": {"amount": 10},
+                "lport_create_args" : {},
+                "lports_per_lswitch": 150},
+            "runner": {"type": "serial", "times": 1},
+            "context": {"ovn_multihost" : {"controller": "ovn-controller-node"}}
+        }]
+    }]
+}

@@ -1,0 +1,19 @@
+{% set prefix = prefix or "lswitch" %}
+{
+    "version": 2,
+    "title": "cleanup logical switch",
+    "subtasks": [{
+        "title": "cleanup logical switch",
+        "workloads": [{
+            "name": "OvnNorthbound.cleanup_lswitches",
+            "args": {
+                lswitch_cleanup_args: {"prefix" : "{{prefix}}"}
+            },
+            "runner": {"type": "serial","times": 1},
+            "context": {
+               "ovn_multihost" : {"controller": "ovn-controller-node"},
+               "ovn_nb": {}
+            }
+        }]
+    }]
+}

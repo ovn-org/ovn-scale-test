@@ -1,0 +1,17 @@
+{
+
+    "type": "OvnSandboxFarmEngine",
+    "deployment_name": "ovn-sandbox-node-0",
+    "ovs_repo" : "https://github.com/openvswitch/ovs.git",
+    "ovs_branch" : "branch-2.5",
+    "ovs_user" : "rally",
+    "provider": {
+        "type": "OvsSandboxProvider",
+        "credentials": [
+            {
+                "host": "192.168.20.20",
+                "user": "root"}
+        ]
+    }
+
+}

@@ -1,0 +1,39 @@
+{
+    "version": 2,
+    "title": "Create and delete logical switch",
+    "description": "Create and delete logical switch in OVN northbound",
+    "tags": ["ovn", "northbound"],
+
+
+    "subtasks": [
+        {
+            "title": "Create and delete logical switch subtask",
+            "group": "ovn",
+            "description": "Create and delete logical switch subtask",
+            "tags": ["ovn", "northbound"],
+            "run_in_parallel": false,
+
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.create_and_delete_lswitch",
+                    "args": {
+                        "lswitch_create_args": {
+                            "amount": 3
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1,
+                        "concurrency": 4,
+                        "max_cpu_count": 2
+                    },
+                    "context": {
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
