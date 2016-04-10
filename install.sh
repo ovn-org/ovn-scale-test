@@ -34,8 +34,8 @@ PYTHON=${PYTHON2:-$PYTHON3}
 BASE_PIP_URL=${BASE_PIP_URL:-"https://pypi.python.org/simple"}
 VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
 
-RALLY_OVS_GIT_URL="https://github.com/l8huang/rally-ovs.git"
-RALLY_OVS_GIT_BRANCH="master"
+OVN_SCALE_TEST_GIT_URL="https://github.com/l8huang/rally-ovs.git"
+OVN_SCALE_TEST_GIT_BRANCH="master"
 RALLY_CONFIGURATION_DIR=/etc/rally
 
 # Variable used by script_interrupted to know what to cleanup
@@ -150,7 +150,7 @@ print_usage () {
     cat <<__EOF__
 Usage: $PROG [options]
 
-This script will install Rally in your system.
+This script will install OVN scale test tool in your system.
 
 Options:
 $GREEN  -h, --help            $NO_COLOR Print this help text
@@ -161,7 +161,7 @@ $GREEN  -d, --target DIRECTORY$NO_COLOR Install Rally virtual environment into D
 $GREEN  --url                 $NO_COLOR Git repository public URL to download Rally OVS from.
                          This is useful when you have only installation script and want to install Rally
                          from custom repository.
-                         (Default: ${RALLY_OVS_GIT_URL}).
+                         (Default: ${OVN_SCALE_TEST_GIT_URL}).
                          (Ignored when you are already in git repository).
 $GREEN  --branch              $NO_COLOR Git branch name name or git tag (Rally OVS release) to install.
                          (Default: latest - master).
@@ -424,11 +424,11 @@ do
             ;;
         --url)
             shift
-            RALLY_OVS_GIT_URL=$1
+            OVN_SCALE_TEST_GIT_URL=$1
             ;;
         --branch)
             shift
-            RALLY_OVS_GIT_BRANCH=$1
+            OVN_SCALE_TEST_GIT_BRANCH=$1
             ;;
         -p|--python)
             shift
@@ -524,9 +524,9 @@ else
 
     if ! [ -d "$SOURCEDIR"/.git ]
     then
-        echo "Downloading rally-ovs from repository $RALLY_OVS_GIT_URL ..."
+        echo "Downloading rally-ovs from repository $OVN_SCALE_TEST_GIT_URL ..."
         CURRENT_ACTION="downloading-src"
-        git clone "$RALLY_OVS_GIT_URL" -b "$RALLY_OVS_GIT_BRANCH" "$SOURCEDIR"
+        git clone "$OVN_SCALE_TEST_GIT_URL" -b "$OVN_SCALE_TEST_GIT_BRANCH" "$SOURCEDIR"
         if ! [ -d $SOURCEDIR/.git ]
             then
             abort $EX_CANTCREAT "Unable to download git repository"
@@ -573,9 +573,9 @@ __EOF__
 #    install $SOURCEDIR/etc/rally.bash_completion $VENVDIR/etc/bash_completion.d/
 
     cat <<__EOF__
-$GREEN==================================
-Installation of Rally OVS is done!
-==================================
+$GREEN=======================================
+Installation of OVN scale test is done!
+=======================================
 $NO_COLOR
 In order to work with Rally you have to enable the virtual environment
 with the command:
@@ -609,9 +609,9 @@ __EOF__
 #    ln -s /usr/local/etc/bash_completion.d/rally.bash_completion /etc/bash_completion.d/ 2> /dev/null || true
 
     cat <<__EOF__
-$GREEN==============================
-Installation of rally-ovs is done!
-==============================
+$GREEN=======================================
+Installation of OVN scale test is done!
+=======================================
 $NO_COLOR
 Rally is now installed in your system. Information about your Rally
 installation:
