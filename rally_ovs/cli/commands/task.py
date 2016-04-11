@@ -15,7 +15,6 @@
 
 from rally.cli import cliutils
 from rally.cli import envutils
-from rally.common import fileutils
 from rally.cli.commands import task
 from rally import plugins
 

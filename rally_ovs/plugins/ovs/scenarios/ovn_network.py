@@ -12,14 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import random
-
 from rally.common import logging
 from rally_ovs.plugins.ovs.scenarios import ovn
 
 from rally.task import scenario
 from rally.task import validation
-from rally_ovs.plugins.ovs.utils import get_random_mac
 
 LOG = logging.getLogger(__name__)
 

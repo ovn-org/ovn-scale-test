@@ -12,22 +12,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os
 import sys
-import six
 from six.moves.urllib import parse
-import subprocess
 
 
 from rally.common.i18n import _
 from rally.common import logging
-from rally.common import objects
-from rally import consts
 from rally.deployment import engine # XXX: need a ovs one?
 from rally.deployment.serverprovider import provider
 
 
-from rally_ovs.plugins.ovs.deployment.engines import get_script
 from rally_ovs.plugins.ovs.deployment.engines import get_updated_server
 from rally_ovs.plugins.ovs.deployment.engines import OVS_USER
 from rally_ovs.plugins.ovs.consts import ResourceType

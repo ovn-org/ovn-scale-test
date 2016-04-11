@@ -15,7 +15,7 @@
 
             "workloads": [
                 {
-                    "name": "OvnNorthbound.create_and_delete_lport",
+                    "name": "OvnNorthbound.create_and_delete_lports",
                     "args": {
                         "lswitch_create_args": {
                             "amount": 2

@@ -13,7 +13,6 @@
 # under the License.
 
 
-import copy
 import six
 from rally.common.i18n import _
 from rally.common import logging

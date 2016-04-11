@@ -13,13 +13,9 @@
 # under the License.
 
 import six
-import copy
 from rally.common.i18n import _
 from rally.common import logging
-from rally.common import db
-from rally.common import objects
 from rally import consts
-from rally import exceptions
 from rally.task import context
 import rally_ovs.plugins.ovs as ovs
 

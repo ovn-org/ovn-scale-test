@@ -12,19 +12,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import sys
 import abc
-import itertools
 import collections
 import six
-import pipes
 
 from rally.common.plugin import plugin
-from rally import exceptions
-
-from utils import get_ssh_from_credential
 from utils import py_to_val
-from StringIO import StringIO
 
 _NAMESPACE = "ovs"
 

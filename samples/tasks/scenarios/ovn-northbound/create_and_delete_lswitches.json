@@ -15,7 +15,7 @@
 
             "workloads": [
                 {
-                    "name": "OvnNorthbound.create_and_delete_lswitch",
+                    "name": "OvnNorthbound.create_and_delete_lswitches",
                     "args": {
                         "lswitch_create_args": {
                             "amount": 3

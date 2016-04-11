@@ -16,7 +16,6 @@ from rally_ovs.plugins.ovs import scenario
 from rally.task import atomic
 from rally.common import logging
 from rally import exceptions
-import random
 from rally_ovs.plugins.ovs.utils import get_random_sandbox
 from rally_ovs.plugins.ovs import utils
 import netaddr

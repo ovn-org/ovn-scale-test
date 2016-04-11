@@ -1,5 +1,5 @@
 {
-    "OvnNorthbound.create_and_list_lswitch": [
+    "OvnNorthbound.create_and_list_lswitches": [
         {
             "args": {
                 "lswitch_create_args": {}

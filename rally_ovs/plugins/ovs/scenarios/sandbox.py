@@ -22,7 +22,6 @@ from rally.task import atomic
 
 from rally.common import objects
 
-from rally_ovs.plugins.ovs.deployment.engines import get_script
 from netaddr.ip import IPRange
 from rally_ovs.plugins.ovs.consts import ResourceType
 

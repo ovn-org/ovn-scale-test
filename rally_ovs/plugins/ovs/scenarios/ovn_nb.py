@@ -14,7 +14,6 @@
 
 
 
-import six
 from rally_ovs.plugins.ovs.scenarios import ovn
 
 from rally.task import scenario
@@ -24,13 +23,13 @@ class OvnNorthbound(ovn.OvnScenario):
     """Benchmark scenarios for OVN northbound."""
 
     @scenario.configure(context={})
-    def create_and_list_lswitch(self, lswitch_create_args=None):
+    def create_and_list_lswitches(self, lswitch_create_args=None):
         self._create_lswitches(lswitch_create_args)
         self._list_lswitches()
 
 
     @scenario.configure(context={})
-    def create_and_delete_lswitch(self, lswitch_create_args=None):
+    def create_and_delete_lswitches(self, lswitch_create_args=None):
         lswitches = self._create_lswitches(lswitch_create_args or {})
         self._delete_lswitch(lswitches)
 
@@ -65,7 +64,7 @@ class OvnNorthbound(ovn.OvnScenario):
 
 
     @scenario.configure(context={})
-    def create_and_delete_lport(self,
+    def create_and_delete_lports(self,
                               lswitch_create_args=None,
                               lport_create_args=None,
                               lports_per_lswitch=None):
@@ -130,7 +129,7 @@ class OvnNorthbound(ovn.OvnScenario):
     @validation.number("lports_per_lswitch", minval=1, integer_only=True)
     @validation.number("acls_per_port", minval=1, integer_only=True)
     @scenario.configure(context={})
-    def create_and_delete_acl(self,
+    def create_and_delete_acls(self,
                               lswitch_create_args=None,
                               lport_create_args=None,
                               lports_per_lswitch=None,
