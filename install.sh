@@ -377,10 +377,9 @@ __EOF__
 }
 
 
-
 ### Main program ###
 short_opts='d:vsyfrRhD:p:'
-long_opts='target:,verbose,overwrite,recreate,no-recreate,system,yes,python:,url:,branch:,develop,no-color'
+long_opts='target:,verbose,overwrite,recreate,no-recreate,system,yes,python:,help,url:,branch:,develop,no-color'
 
 set +e
 if [ "x$(getopt -T)" = 'x' ]; then

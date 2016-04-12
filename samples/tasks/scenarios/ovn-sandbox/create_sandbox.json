@@ -7,7 +7,7 @@
             "name": "OvnSandbox.create_sandbox",
             "args": {
                 "sandbox_create_args": {
-                    "farm": "ovn-sandbox-node-0",
+                    "farm": "ovn-farm-node-0",
                     "amount": 3,
                     "batch" : 10,
                     "start_cidr": "192.168.64.0/16",

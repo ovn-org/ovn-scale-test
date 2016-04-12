@@ -4,7 +4,7 @@
         "type": "OvnSandboxControllerEngine",
         "deployment_name": "ovn-controller-node",
         "ovs_repo": "https://github.com/openvswitch/ovs.git",
-        "ovs_branch": "branch-2.5",
+        "ovs_branch": "master",
         "ovs_user": "rally",
         "net_dev": "eth1",
         "controller_cidr": "192.168.10.10/16",
@@ -20,9 +20,9 @@
     "nodes": [
         {
             "type": "OvnSandboxFarmEngine",
-            "deployment_name": "ovn-sandbox-node-0",
+            "deployment_name": "ovn-farm-node-0",
             "ovs_repo" : "https://github.com/openvswitch/ovs.git",
-            "ovs_branch" : "branch-2.5",
+            "ovs_branch" : "master",
             "ovs_user" : "rally",
             "provider": {
                 "type": "OvsSandboxProvider",
