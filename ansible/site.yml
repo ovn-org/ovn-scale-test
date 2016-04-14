@@ -1,0 +1,7 @@
+---
+- hosts:
+    - ovn-database
+    - emulation-hosts
+  roles:
+    - ovn
+

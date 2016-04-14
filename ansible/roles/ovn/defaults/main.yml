@@ -1,0 +1,15 @@
+---
+project_name: "ovn"
+
+#######################
+# Docker
+#######################
+
+ovn_db_image_full: "{{ ovn_db_image }}"
+ovn_chassis_image_full: "{{ ovn_chassis_image }}"
+
+#######################
+# Emulation environment
+#######################
+database_alias_ip: "{{ ovn_database_alias_ip }}"
+database_device: "{{ ovn_database_device }}"
