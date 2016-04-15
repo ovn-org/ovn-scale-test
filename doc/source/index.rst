@@ -42,6 +42,8 @@ Contents
    overview
    install
    tutorial
+   plugin/plugin_reference
+
 
 
 

@@ -14,23 +14,14 @@
     under the License.
 
 
-.. _tutorial:
-
-OVN Scale Test step-by-step
-===========================
-
-In the following tutorial, we will guide you step-by-step through different use
-cases that might occur in OVN Scale Test, starting with the easy ones and
-moving towards more complicated cases.
 
 
-
-.. toctree::
-   :glob:
-   :maxdepth: 1
-
-   tutorial/**
+.. _plugin_reference:
 
 
+OVN Scale Test Plugins Reference
+================================
 
+.. contents:: :depth: 3
 
+.. generate_plugin_reference::

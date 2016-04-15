@@ -21,9 +21,27 @@ For start using this tool, you need to have a
 similar to Rally's.
 
 
+Documentation
+=============
 
-OVN Scale Test step-by-step
-===========================
-In the following tutorial, we will guide you step-by-step through different use
-cases that might occur in Rally.
+`OVN Scale Test documentation on ReadTheDocs <http://ovn-scale-test.readthedocs.org/en/latest/>`_
+is a perfect place to start learning about it.
+
+
+Links
+----------------------
+
+**OVN Scale Test** documentation:
+
+    http://ovn-scale-test.readthedocs.org/en/latest/
+
+**OVN Scale Test** step-by-step tutorial:
+
+    http://ovn-scale-test.readthedocs.org/en/latest/tutorial.html
+
+Code is hosted on github:
+
+    https://github.com/openvswitch/ovn-scale-test
+
+
 

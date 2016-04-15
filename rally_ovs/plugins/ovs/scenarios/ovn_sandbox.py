@@ -46,12 +46,42 @@ class OvnSandbox(sandbox.SandboxScenario):
 
     @scenario.configure(context={})
     def create_sandbox(self, sandbox_create_args=None):
+        """Create one or more sandboxes on a farm node.
+
+        .. code-block:: json
+
+            {
+                "farm": "ovn-farm-node-0",
+                "amount": 3,
+                "batch" : 10,
+                "start_cidr": "192.168.64.0/16",
+                "net_dev": "eth1",
+                "tag": "ToR1"
+            }
+
+        :param sandbox_create_args: dict, contains
+
+                    =======   =======
+                    key       desc
+                    =======   =======
+                    farm      str, the name of farm node
+                    =======   =======
+
+
+
+        """
         self._create_sandbox(sandbox_create_args)
 
 
     @scenario.configure(context={})
     def create_and_delete_sandbox(self, sandbox_create_args=None):
+        # TODO: if doc string is all whitespace, generate doc will failed
         sandboxes = self._create_sandbox(sandbox_create_args)
         self.sleep_between(1, 2) # xxx: add min and max sleep args - l8huang
         self._delete_sandbox(sandboxes)
+
+
+
+
+
 
