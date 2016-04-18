@@ -14,11 +14,14 @@
 
 import random
 import netaddr
+import six
 
 from consts import ResourceType
 from rally.common import sshutils
 from rally.common import objects
 from rally.common import utils
+
+from rally.common import db
 
 
 cidr_incr = utils.RAMInt()
@@ -99,4 +102,53 @@ def py_to_val(pyval):
         return '""'
     else:
         return pyval
+
+
+
+def get_farm_nodes(deploy_uuid):
+    deployments = db.deployment_list(parent_uuid=deploy_uuid)
+
+    farm_nodes = []
+    for dep in deployments:
+        res = db.resource_get_all(dep["uuid"], type=ResourceType.SANDBOXES)
+        if len(res) == 0 or len(res[0].info["sandboxes"]) == 0:
+            continue
+
+        farm_nodes.append(res[0].info["farm"])
+
+    return farm_nodes
+
+
+
+
+def get_sandboxes(deploy_uuid, farm="", tag=""):
+
+    sandboxes = []
+    deployments = db.deployment_list(parent_uuid=deploy_uuid)
+    for dep in deployments:
+        res = db.resource_get_all(dep["uuid"], type=ResourceType.SANDBOXES)
+        if len(res) == 0 or len(res[0].info["sandboxes"]) == 0:
+            continue
+
+        info = res[0].info
+
+        if farm and farm != info["farm"]:
+            continue
+
+        for k,v in six.iteritems(info["sandboxes"]):
+            if tag and tag != v:
+                continue
+
+            sandbox = {"name": k, "tag": v, "farm": info["farm"]}
+            sandboxes.append(sandbox)
+
+
+    return sandboxes
+
+
+
+
+
+
+
 

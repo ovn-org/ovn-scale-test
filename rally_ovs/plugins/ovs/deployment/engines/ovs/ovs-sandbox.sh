@@ -37,7 +37,12 @@ host_ip="127.0.0.1/8"
 device="eth0"
 
 session=false
-do_cleanup=false
+
+start=
+stop=
+cleanup=
+cleanup_all=false
+graceful=false
 
 for option; do
     # This option-parsing mechanism borrowed from a Autoconf-generated
@@ -87,7 +92,11 @@ Other options:
   -D, --device         The network device which has the host ip, default is eth0
   -S, --session        Open a bash for running OVN/OVS tools in the
                        dummy Open vSwitch environment
-  --cleanup            Cleanup the sandbox
+  --start=SANDBOX      Start the sandbox [TODO]
+  --stop=SANDBOX       Stop the sandbox [TODO]
+  --cleanup=SANDBOX    Cleanup the sandbox
+  --cleanup-all        Cleanup all sandboxes
+  --graceful           Graceful cleanup/stop sandbox
 EOF
             exit 0
             ;;
@@ -128,8 +137,20 @@ EOF
         -S|--session)
             session=true;
             ;;
+        --start)
+            prev=start
+            ;;
+        --stop)
+            prev=stop
+            ;;
         --cleanup)
-            do_cleanup=true;
+            prev=cleanup
+            ;;
+        --cleanup-all)
+            cleanup_all=true
+            ;;
+        --graceful)
+            graceful=true;
             ;;
         -c|--controller-ip)
             prev=controller_ip
@@ -245,18 +266,6 @@ fi
 
 
 
-function app_exit {
-    local proc=$1
-    local pid=
-
-    if [ -f $OVS_RUNDIR/$proc.pid ] ; then
-        echo "$proc exit"
-        pid=`cat $OVS_RUNDIR/$proc.pid`
-        ovs-appctl --timeout 2 -t $OVS_RUNDIR/$proc.$pid.ctl exit || kill $pid
-        rm -f $OVS_RUNDIR/$proc.$pid.ctl # the file was renamed, remove it forcely
-        [ -n "$pid" ] && kill -15 $pid
-    fi
-}
 
 
 #
@@ -374,17 +383,61 @@ fi
 
 sandbox=`pwd`/$sandbox_name
 
-
-function cleanup {
-
+function is_sandbox {
     local box_name=$1
 
     if [ ! -d $box_name ] || [ ! -f $box_name/sandbox.rc ] ; then
-        echo "Not found sandbox $box_name"
-        return
+        return 1
     fi
 
-    echo "CLEANUP: $box_name"
+    return 0
+}
+
+function app_exit {
+    local proc=$1
+    local pid=
+
+    if [ -f $OVS_RUNDIR/$proc.pid ] ; then
+        echo "$proc exit"
+        pid=`cat $OVS_RUNDIR/$proc.pid`
+        if $graceful ; then
+            # TODO: ovsdb-server-sb has bug to process lastest ovn-controller's
+            #       exit message, so add a timeout here to avoid blocking forever
+            local exit_success=true
+            ovs-appctl --timeout 5 -t $OVS_RUNDIR/$proc.$pid.ctl exit || exit_success=false
+            if $exit_success; then
+                local wait_until=`date +%s%3N`
+                (( wait_until += 5000 ))
+
+                while test -e "$OVS_RUNDIR"/$proc.pid; do
+                    sleep 0.5;
+                    if [ `date +%s%3N` -gt $wait_until ] ; then
+                        echo "Wait $proc exit timeout"
+                        kill $pid
+                        break
+                    fi
+                done
+            else
+                echo "Exit $proc by ovs-appctl exit timeout"
+                kill $pid
+            fi
+
+        else
+            kill $pid
+        fi
+
+        rm -f $OVS_RUNDIR/$proc.$pid.ctl # the file was renamed, remove it forcely
+    fi
+}
+
+
+function do_stop {
+
+    local box_name=$1
+    if ! is_sandbox $box_name ; then
+        echo "Not found sandbox $box_name"
+        return 1
+    fi
 
     . $box_name/sandbox.rc 2>/dev/null
 
@@ -394,6 +447,20 @@ function cleanup {
     app_exit ovn-controller
     app_exit ovsdb-server
     app_exit ovs-vswitchd
+}
+
+function do_cleanup {
+
+    local box_name=$1
+
+    if ! is_sandbox $box_name ; then
+        echo "Not found sandbox $box_name"
+        return 1
+    fi
+
+    echo "CLEANUP: $box_name"
+
+    do_stop $box_name
 
     # Ensure cleanup.
     pids=`cat "$box_name"/*.pid 2>/dev/null`
@@ -422,17 +489,29 @@ function cleanup_all {
     echo $all
 
     for i in $all; do
-        cleanup $i
+        do_cleanup $i
     done
 }
 
 
-if $do_cleanup ; then
+if [ X$stop != X ]; then
+    do_stop $stop
+    exit $?
+fi
+
+if $cleanup_all ; then
     cleanup_all
     exit 0
 fi
 
-cleanup $sandbox_name
+
+if [ X$cleanup != X ] ; then
+    do_cleanup $cleanup
+    exit $?
+fi
+
+
+do_cleanup $sandbox_name
 
 # Get ip addresses on net device
 get_ip_cidrs $device
@@ -528,7 +607,7 @@ EOF
             run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
                 --unixctl=$prog_name.ctl \
                 -vconsole:off -vsyslog:off -vfile:info \
-		--log-file=$prog_name.log \
+                --log-file=$prog_name.log \
                 --remote="p$OVN_NB_DB" \
                 conf-nb.db ovnnb.db
             pid=`cat $sandbox_name/$prog_name.pid`
@@ -539,7 +618,7 @@ EOF
             run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
                 --unixctl=$prog_name.ctl \
                 -vconsole:off -vsyslog:off -vfile:info \
-		--log-file=$prog_name.log \
+                --log-file=$prog_name.log \
                 --remote="p$OVN_SB_DB" \
                 --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
                 conf-sb.db ovnsb.db

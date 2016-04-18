@@ -15,6 +15,9 @@
 
 import sys
 import netaddr
+import six
+
+from collections import defaultdict
 
 from rally import exceptions
 from rally_ovs.plugins.ovs import scenario
@@ -59,7 +62,8 @@ class SandboxScenario(scenario.OvsScenario):
 
     """
         @param farm_dep  A name or uuid of farm deployment
-        @param sandboxes A list of sandboxes' name
+        @param sandboxes A list of 'sandbox:tag' dict, e.g.
+                         "sandbox-192.168.64.1": "ToR1"
     """
     def _add_sandbox_resource(self, farm_dep, sandboxes):
         dep = objects.Deployment.get(farm_dep)
@@ -75,6 +79,25 @@ class SandboxScenario(scenario.OvsScenario):
                 continue
             sandboxes[i] = info["sandboxes"][i]
 
+
+        info["sandboxes"] = sandboxes
+        res.update({"info": info})
+        res.save()
+
+
+    """
+        @param farm_dep  A name or uuid of farm deployment
+        @param sandboxes A list of sandboxes' name
+    """
+    def _delete_sandbox_resource(self, farm_dep, to_delete):
+        dep = objects.Deployment.get(farm_dep)
+        res = dep.get_resources(type=ResourceType.SANDBOXES)[0]
+
+        info = res["info"]
+        sandboxes = info["sandboxes"]
+        for i in to_delete:
+            if info["sandboxes"].has_key(i):
+                del info["sandboxes"][i]
 
         info["sandboxes"] = sandboxes
         res.update({"info": info})
@@ -149,10 +172,33 @@ class SandboxScenario(scenario.OvsScenario):
 
         self._add_sandbox_resource(farm, sandboxes)
 
+        return sandboxes
+
+
     @atomic.action_timer("sandbox.delete_sandbox")
-    def _delete_sandbox(self, sandbox):
+    def _delete_sandbox(self, sandboxes, graceful=False):
         print("delete sandbox")
-        pass
+
+        graceful = "--graceful" if graceful else ""
+
+        farm_map = defaultdict(list)
+        for i in sandboxes:
+            farm_map[i["farm"]].append(i["name"])
+
+        for k,v in six.iteritems(farm_map):
+            ssh = self.farm_clients(k)
+
+            cmds = []
+            to_delete = []
+            for sandbox in v:
+                cmd = "./ovs-sandbox.sh --ovn %s --cleanup  %s" % \
+                        (graceful, sandbox)
+                cmds.append(cmd)
+                to_delete.append(sandbox)
+
+            ssh.run("\n".join(cmds), stdout=sys.stdout, stderr=sys.stderr);
+
+            self._delete_sandbox_resource(k, to_delete)
 
 
 

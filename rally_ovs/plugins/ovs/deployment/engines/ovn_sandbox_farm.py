@@ -114,7 +114,7 @@ class OvnSandboxFarmEngine(SandboxEngine):
             if resource["type"] == ResourceType.CREDENTIAL:
                 server = provider.Server.from_credentials(resource.info)
 
-                cmd = "[ -x ovs-sandbox.sh ] && ./ovs-sandbox.sh --cleanup"
+                cmd = "[ -x ovs-sandbox.sh ] && ./ovs-sandbox.sh --cleanup-all"
 
                 try:
                     server.ssh.run(cmd,

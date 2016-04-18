@@ -1,0 +1,24 @@
+{
+    "version": 2,
+    "title": "Create and delete sandbox",
+    "subtasks": [{
+        "title": "Create and delete sandbox on farm 0",
+        "workloads": [{
+            "name": "OvnSandbox.create_and_delete_sandbox",
+            "args": {
+                "sandbox_create_args": {
+                    "farm": "ovn-farm-node-0",
+                    "amount": 50,
+                    "batch" : 10,
+                    "start_cidr": "192.168.64.0/16",
+                    "net_dev": "eth1",
+                    "tag": "ToR1"
+                }
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+                "ovn_multihost" : { "controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}
