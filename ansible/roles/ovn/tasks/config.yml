@@ -1,0 +1,51 @@
+---
+- name: Ensuring config directories exist on database
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    state: "directory"
+    recurse: yes
+  with_items:
+    - "openvswitch-ovn-db"
+  when:
+    - inventory_hostname in groups['ovn-database']
+
+- name: Copying over config.json files for OVN database
+  template:
+    src: "{{ item }}.json.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/config.json"
+  with_items:
+    - "openvswitch-ovn-db"
+  when:
+    - inventory_hostname in groups['ovn-database']
+
+- name: Generate IP lists pair for emulated chassis
+  generate_chassis_ip_pairs:
+    start_cidr: "{{ ovn_chassis_start_cidr }}"
+    group_size: "{{ groups['emulation-hosts'] | length }}"
+    num_ip: "{{ ovn_number_chassis }}"
+  register: dmi_data
+  when:
+    - inventory_hostname in groups['emulation-hosts']
+
+- name: Ensuring config directories exist on chassis host
+  file:
+    path: "{{ node_config_directory }}/openvswitch-ovn-chassis-{{ item.1 }}"
+    state: "directory"
+    recurse: yes
+  delegate_to: "{{ groups['emulation-hosts'][ item.0 ] }}"
+  with_together:
+        - "{{ dmi_data['ip_index'] }}"
+        - "{{ dmi_data['ip_index_list'] }}"
+  when:
+    - inventory_hostname in groups['emulation-hosts']
+
+- name: Copying over config.json files for services on chassis host
+  template:
+    src: "openvswitch-ovn-chassis.json.j2"
+    dest: "{{ node_config_directory }}/openvswitch-ovn-chassis-{{ item.1 }}/config.json"
+  delegate_to: "{{ groups['emulation-hosts'][ item.0 ] }}"
+  with_together:
+        - "{{ dmi_data['ip_index'] }}"
+        - "{{ dmi_data['ip_index_list'] }}"
+  when:
+    - inventory_hostname in groups['emulation-hosts']

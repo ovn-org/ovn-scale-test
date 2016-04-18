@@ -1,0 +1,9 @@
+# You should only add one IP address in this role. The node in this role runs
+# the OVN databse container
+[ovn-database]
+9.2.212.54
+
+# Add host IPs to run emulated OVN chassis
+[emulation-hosts]
+9.2.212.55
+9.2.212.56
