@@ -24,19 +24,41 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 199369E540
     && rm -rf /usr/lib/python2.7/site-packages \
     && ln -s dist-packages /usr/lib/python2.7/site-packages
 
-RUN apt-get install -y --no-install-recommends openvswitch-switch \
+# Install OVS and OVN from distribution packages
+#RUN apt-get install -y --no-install-recommends openvswitch-switch \
+#    && apt-get clean
+
+#RUN apt-get install -y --no-install-recommends ovn-central \
+#        ovn-host \
+#	ovn-docker \
+#	ovn-common \
+#    && apt-get clean
+
+# Install tools to compile OVS
+RUN apt-get install -y --no-install-recommends \
+            git \
+            autoconf \
+            make \
+            automake \
+            libtool \
+            uuid-runtime \
     && apt-get clean
 
-RUN apt-get install -y --no-install-recommends ovn-central \
-        ovn-host \
-	ovn-docker \
-	ovn-common \
-    && apt-get clean
+# Download OVS from git master
+RUN git clone https://github.com/openvswitch/ovs.git \
+    && cd /ovs \
+    && ./boot.sh \
+    && ./configure \
+    &&  make -j4 \
+    &&  make install
 
 COPY ovn-sandbox-database.sh /bin/ovn_set_database
 RUN chmod 755 /bin/ovn_set_database
 
 COPY ovn-sandbox-chassis.sh /bin/ovn_set_chassis
 RUN chmod 755 /bin/ovn_set_chassis
+
+# DO NOT commit; the following are for debugging purpose
+RUN apt-get install emacs screen openssh-client -y
 
 # ENTRYPOINT ["/usr/local/bin/ovn_set_database"]
