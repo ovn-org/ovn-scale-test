@@ -1,21 +1,14 @@
 #!/bin/bash
+set -eu
 
 run() {
     (cd "$sandbox" && "$@") || exit 1
 }
 
 
-#srcdir=/ovs
-#schema=$srcdir/vswitchd/vswitch.ovsschema
-#ovnsb_schema=$srcdir/ovn/ovn-sb.ovsschema
-#ovnnb_schema=$srcdir/ovn/ovn-nb.ovsschema
-#vtep_schema=$srcdir/vtep/vtep.ovsschema
-
-#srcdir=/ovs
-schema=/usr/share/openvswitch/vswitch.ovsschema
-ovnsb_schema=/usr/share/openvswitch/ovn-sb.ovsschema
-ovnnb_schema=/usr/share/openvswitch/ovn-nb.ovsschema
-#vtep_schema=$srcdir/vtep/vtep.ovsschema
+schema=/usr/local/share/openvswitch/vswitch.ovsschema
+ovnsb_schema=/usr/local/share/openvswitch/ovn-sb.ovsschema
+ovnnb_schema=/usr/local/share/openvswitch/ovn-nb.ovsschema
 
 controller_ip=$1
 device=$2
@@ -105,25 +98,14 @@ function ip_cidr_fixup {
 #
 
 # Create sandbox.
-sandbox_name="controller-sandbox"
+# sandbox_name="controller-sandbox"
+sandbox_name="/usr/local/var/run/openvswitch/"
 
-sandbox=`pwd`/$sandbox_name
+sandbox=$sandbox_name
 
 # Get ip addresses on net device
 get_ip_cidrs $device
-host_ip=`ip_cidr_fixup $host_ip`
 
-mkdir $sandbox_name
-
-# Set up environment for OVS programs to sandbox themselves.
-cat > $sandbox_name/sandbox.rc <<EOF
-OVS_RUNDIR=$sandbox; export OVS_RUNDIR
-OVS_LOGDIR=$sandbox; export OVS_LOGDIR
-OVS_DBDIR=$sandbox; export OVS_DBDIR
-OVS_SYSCONFDIR=$sandbox; export OVS_SYSCONFDIR
-EOF
-
-. $sandbox_name/sandbox.rc
 
 # A UUID to uniquely identify this system.  If one is not specified, a random
 # one will be generated.  A randomly generated UUID will be saved in a file
@@ -134,11 +116,11 @@ function configure_ovn {
     echo "Configuring OVN"
 
     if [ -z "$OVN_UUID" ] ; then
-        if [ -f $OVS_RUNDIR/ovn-uuid ] ; then
-            OVN_UUID=$(cat $OVS_RUNDIR/ovn-uuid)
+        if [ -f /usr/local/var/run/openvswitch/ovn-uuid ] ; then
+            OVN_UUID=$(cat /usr/local/var/run/openvswitch/ovn-uuid)
         else
             OVN_UUID=$(uuidgen)
-            echo $OVN_UUID > $OVS_RUNDIR/ovn-uuid
+            echo $OVN_UUID > /usr/local/var/run/openvswitch/ovn-uuid
         fi
     fi
 }
@@ -169,81 +151,65 @@ function start_ovs {
     CON_IP=`get_ip_from_cidr $controller_ip`
     echo "controller ip: $CON_IP"
 
-    SANDBOX_BIND_IP=""
     EXTRA_DBS=""
     OVSDB_REMOTE=""
 
-            touch "$sandbox"/.conf-nb.db.~lock~
-            touch "$sandbox"/.conf-sb.db.~lock~
-            run ovsdb-tool create conf-nb.db "$schema"
-            run ovsdb-tool create conf-sb.db "$schema"
+    touch "$sandbox"/.conf-nb.db.~lock~
+    touch "$sandbox"/.conf-sb.db.~lock~
+    run ovsdb-tool create conf-nb.db "$schema"
+    run ovsdb-tool create conf-sb.db "$schema"
 
-            touch "$sandbox"/.ovnsb.db.~lock~
-            touch "$sandbox"/.ovnnb.db.~lock~
-            run ovsdb-tool create ovnsb.db "$ovnsb_schema"
-            run ovsdb-tool create ovnnb.db "$ovnnb_schema"
+    touch "$sandbox"/.ovnsb.db.~lock~
+    touch "$sandbox"/.ovnnb.db.~lock~
+    run ovsdb-tool create ovnsb.db "$ovnsb_schema"
+    run ovsdb-tool create ovnnb.db "$ovnnb_schema"
 
-            ip_addr_add $controller_ip $device
-            SANDBOX_BIND_IP=$controller_ip
+    ip_addr_add $controller_ip $device
 
-            OVSDB_REMOTE="ptcp\:6640\:$CON_IP"
+    OVSDB_REMOTE="ptcp\:6640\:$CON_IP"
 
-            cat >> $sandbox_name/sandbox.rc <<EOF
-OVN_NB_DB=unix:$sandbox/db-nb.sock; export OVN_NB_DB
-OVN_SB_DB=unix:$sandbox/db-sb.sock; export OVN_SB_DB
-EOF
-            . $sandbox_name/sandbox.rc
+    # Northbound db server
+    prog_name='ovsdb-server-nb'
+    run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
+        --unixctl=$prog_name.ctl \
+        -vconsole:off -vsyslog:off -vfile:info \
+	--log-file=$prog_name.log \
+        --remote=punix:/usr/local/var/run/openvswitch/ovnnb_db.sock \
+        conf-nb.db ovnnb.db
+    pid=`cat $sandbox_name/$prog_name.pid`
+    mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
 
-            # Northbound db server
-            prog_name='ovsdb-server-nb'
-            run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
-                --unixctl=$prog_name.ctl \
-                -vconsole:off -vsyslog:off -vfile:info \
-		--log-file=$prog_name.log \
-                --remote="p$OVN_NB_DB" \
-                conf-nb.db ovnnb.db
-            pid=`cat $sandbox_name/$prog_name.pid`
-            mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
-
-            # Southbound db server
-            prog_name='ovsdb-server-sb'
-            run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
-                --unixctl=$prog_name.ctl \
-                -vconsole:off -vsyslog:off -vfile:info \
-		--log-file=$prog_name.log \
-                --remote="p$OVN_SB_DB" \
-                --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
-                conf-sb.db ovnsb.db
-            pid=`cat $sandbox_name/$prog_name.pid`
-            mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
+    # Southbound db server
+    prog_name='ovsdb-server-sb'
+    run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
+        --unixctl=$prog_name.ctl \
+        -vconsole:off -vsyslog:off -vfile:info \
+	--log-file=$prog_name.log \
+        --remote=punix:/usr/local/var/run/openvswitch/ovnsb_db.sock \
+        --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+        conf-sb.db ovnsb.db
+    pid=`cat $sandbox_name/$prog_name.pid`
+    mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
 
     #Add a small delay to allow ovsdb-server to launch.
     sleep 0.1
 
-        init_ovsdb_server "ovsdb-server-nb" $OVN_NB_DB
-        init_ovsdb_server "ovsdb-server-sb" $OVN_SB_DB
+    init_ovsdb_server "ovsdb-server-nb" unix:/usr/local/var/run/openvswitch/ovnnb_db.sock
+    init_ovsdb_server "ovsdb-server-sb" unix:/usr/local/var/run/openvswitch/ovnsb_db.sock
 
-        ovs-vsctl --db=$OVN_SB_DB --no-wait \
-            -- set open_vswitch .  manager_options=@uuid \
-            -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
-
-    cat >> $sandbox_name/sandbox.rc <<EOF
-SANDBOX_BIND_IP=$SANDBOX_BIND_IP; export SANDBOX_BIND_IP
-SANDBOX_BIND_DEV=$device; export SANDBOX_BIND_DEV
-EOF
-
+    ovs-vsctl --db=unix:/usr/local/var/run/openvswitch/ovnsb_db.sock --no-wait \
+        -- set open_vswitch .  manager_options=@uuid \
+        -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
 }
-
 
 function start_ovn {
     echo "Starting OVN northd"
 
     run ovn-northd  --no-chdir --pidfile \
               -vconsole:off -vsyslog:off -vfile:info --log-file \
-              --ovnnb-db=$OVN_NB_DB \
-              --ovnsb-db=$OVN_SB_DB
+              --ovnnb-db=unix:/usr/local/var/run/openvswitch/ovnnb_db.sock \
+              --ovnsb-db=unix:/usr/local/var/run/openvswitch/ovnsb_db.sock
 }
-
 
 configure_ovn
 

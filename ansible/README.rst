@@ -6,6 +6,14 @@ Overview
 
 Deploy an OVN emulation environment using Docker container and ansible
 
+**why using Docker?**
+
+Docker allows deploying OVN emulation in a fast and consistent fashion.
+Compiling OVS/OVN source is done once in one docker host, rather than
+repetitively in every host. The same docker image will be distributed to all the
+physical hosts by ansible.
+
+
 Host machine requirements
 -------------------------
 
@@ -34,7 +42,7 @@ You can build your own OVN docker image by
     cd ansible/docker
     make
 
-These command will generate an OVN docker image name ovn-scale-test. If you do
+These commands will generate an OVN docker image named ovn-scale-test. If you do
 not like the name, you can edit ansible/docker/Makefile to change the image
 name.
 
@@ -57,7 +65,7 @@ Add hosts to the ansible inventory file
 
     ansible/inventory/ovn-hosts
 
-Customize ansible/group_vars/all.yml based on your testbed.
+Start by editing ansible/group_vars/all.yml to fit your testbed.
 
 For example, to define the total number of emulated chasis in the network:
 
@@ -67,11 +75,11 @@ For example, to define the total number of emulated chasis in the network:
     ovn_chassis_image: "huikang/ovn-scale-test"
     ovn_number_chassis: 10
 
-During deployment, these chassis will be evenly distributed on the emulations
+During deployment, these chassis will be evenly distributed on the emulation
 hosts, which are defined in the inventory file.
 
-Rnning OVN Emulation
-----------------------
+Deploying OVN Emulation
+-----------------------
 
 Run the ansible playbook
 
@@ -89,7 +97,12 @@ To clean up the existing emulation deployment,
     ansible-playbook  -i ansible/inventory/ovn-hosts ansible/site.yml -e action=clean
 
 
+Registerrinng with Rally
+------------------------
+
+**TODO**
+
 Rnning Rally Workloads
 ----------------------
 
-TODO
+**TODO**
