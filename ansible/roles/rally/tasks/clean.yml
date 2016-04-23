@@ -1,0 +1,6 @@
+---
+- name: delete rally container
+  docker:
+    name: ovn-rally
+    image: "{{ rally_image_full }}"
+    state: absent

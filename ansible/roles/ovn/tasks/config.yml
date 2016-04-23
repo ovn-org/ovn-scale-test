@@ -24,8 +24,8 @@
     group_size: "{{ groups['emulation-hosts'] | length }}"
     num_ip: "{{ ovn_number_chassis }}"
   register: dmi_data
-  when:
-    - inventory_hostname in groups['emulation-hosts']
+#  when:
+#    - inventory_hostname in groups['emulation-hosts']
 
 - name: Ensuring config directories exist on chassis host
   file:

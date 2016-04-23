@@ -1,0 +1,13 @@
+---
+- name: Ensuring config directories exist on rally node
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    state: "directory"
+    recurse: yes
+  with_items:
+    - "rally"
+
+- name: Copying over ovn deployment file on rally node
+  template:
+    src: "ovn-multihost-deployment.json.j2"
+    dest: "{{ node_config_directory }}/rally/ovn-multihost-deployment.json"

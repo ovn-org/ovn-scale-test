@@ -1,0 +1,11 @@
+---
+- name: start Rally
+  docker:
+    name: ovn-rally
+    image: "{{ rally_image_full }}"
+    pull: always
+    privileged: yes
+    detach: True
+    state: started
+    volumes:
+      - "{{ node_config_directory }}/rally:/root/rally-ovn/"

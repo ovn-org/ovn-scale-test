@@ -33,3 +33,7 @@
   when:
     - inventory_hostname in groups['emulation-hosts']
   ignore_errors: yes
+
+# TODO:
+#- name: delete ip alias
+#  command:

@@ -62,6 +62,7 @@ class OvnSandboxControllerEngine(SandboxEngine):
         "type": "object",
         "properties": {
             "type": {"type": "string"},
+            "install_method": {"type": "string"},
             "deployment_name": {"type": "string"},
             "http_proxy": {"type": "string"},
             "https_proxy": {"type": "string"},
@@ -79,9 +80,6 @@ class OvnSandboxControllerEngine(SandboxEngine):
         super(OvnSandboxControllerEngine, self).__init__(deployment)
 
 
-
-
-
     @logging.log_deploy_wrapper(LOG.info, _("Deploy ovn sandbox controller"))
     def deploy(self):
         self.servers = self.get_provider().create_servers()
@@ -95,10 +93,16 @@ class OvnSandboxControllerEngine(SandboxEngine):
         if not deployment_name:
             deployment_name = self.config.get("deployment_name", None)
 
+
+        install_method = self.config.get("install_method", None)
+        if not install_method:
+            print "No install_method, use default"
+            install_method = "sandbox"
+        print "Controller install method: ", install_method
+
         ovs_user = self.config.get("ovs_user", OVS_USER)
         ovs_controller_cidr = self.config.get("controller_cidr")
         net_dev = self.config.get("net_dev", "eth0")
-
 
         # start ovn controller with non-root user
         ovs_server = get_updated_server(server, user=ovs_user)
@@ -107,8 +111,14 @@ class OvnSandboxControllerEngine(SandboxEngine):
                             --controller-ip %s --device %s;" % \
                         (ovs_controller_cidr, net_dev)
 
-        ovs_server.ssh.run(cmd,
+        if install_method == "docker":
+            print "Do not run ssh; deployed by ansible-docker"
+        elif install_method == "sandbox":
+            ovs_server.ssh.run(cmd,
                             stdout=sys.stdout, stderr=sys.stderr)
+        else:
+            print "Invalid install method for controller"
+            exit(1)
 
         self.deployment.add_resource(provider_name="OvnSandboxControllerEngine",
                                  type=ResourceType.CREDENTIAL,

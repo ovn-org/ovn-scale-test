@@ -1,0 +1,42 @@
+{
+    "type": "OvnMultihostEngine",
+    "controller": {
+        "type": "OvnSandboxControllerEngine",
+        "install_method": "docker",
+        "deployment_name": "ovn-controller-node",
+        "ovs_repo": "https://github.com/openvswitch/ovs.git",
+        "ovs_branch": "master",
+        "ovs_user": "rally",
+        "net_dev": "{{ ovn_database_device }}",
+        "controller_cidr": "{{ ovn_database_alias_ip }}",
+        "provider": {
+            "type": "OvsSandboxProvider",
+            "credentials": [
+            {
+                "host": "{{ groups['ovn-database'][0] }}",
+                "user": "root"}
+            ]
+        }
+    },
+    "nodes": [
+        {% for host in groups['emulation-hosts'] %}
+        {
+            "type": "OvnSandboxFarmEngine",
+            "install_method": "docker",
+            "deployment_name": "ovn-farm-node-{{ hostvars[host]['ansible_hostname'] }}",
+            "ovs_repo" : "https://github.com/openvswitch/ovs.git",
+            "ovs_branch" : "master",
+            "ovs_user" : "rally",
+            "provider": {
+                "type": "OvsSandboxProvider",
+                "credentials": [
+                    {
+                        "host": "{{ hostvars[host]['provider_ip'] }}",
+                        "user": "root"
+                    }
+                ]
+            }
+        } {% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
