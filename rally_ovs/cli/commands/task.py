@@ -16,7 +16,7 @@
 from rally.cli import cliutils
 from rally.cli import envutils
 from rally.cli.commands import task
-from rally import plugins
+from rally_ovs import plugins
 
 class TaskCommands(task.TaskCommands):
     """ Ovs Task management.

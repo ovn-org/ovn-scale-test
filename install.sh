@@ -555,7 +555,6 @@ if [ "$USEVIRTUALENV" = 'yes' ]
 then
     # Fix bash_completion
     cat >> "$VENVDIR"/bin/activate <<__EOF__
-export RALLY_PLUGIN_PATHS="$SOURCEDIR/rally_ovs/plugins/"
 # . "$VENVDIR/etc/bash_completion.d/rally.bash_completion" # fix it later
 __EOF__
 
@@ -593,9 +592,6 @@ Information about your Rally installation:
 
 __EOF__
 else
-    die $EX_USAGE "Not support system wide yet" <<__EOF__
-System wide shall be supported later.
-__EOF__
 
     if ! [ $DEVELOPMENT_MODE ]
     then
