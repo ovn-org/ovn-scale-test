@@ -34,7 +34,7 @@ from rally.common import utils
 from rally.common import db
 from rally.common import objects
 from rally import exceptions
-from rally import plugins
+from rally_ovs import plugins
 
 
 class DeploymentCommands(object):

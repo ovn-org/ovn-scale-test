@@ -39,8 +39,12 @@ and install it by running its installation script:
     $ ./install_rally.sh
 
 If you execute the script as regular user, Rally will create a new virtual
-environment in ~/rally/ and install in it, and will use sqlite as database
-backend. If you execute the script as root, Rally will be installed system wide.
+environment in `~/rally/` and install in it, and will use sqlite as database
+backend. Note that, because `~/rally` is default installation direcory,
+you should clone Rally otherwhere.
+
+
+If you execute the script as root, Rally will be installed system wide.
 For more installation options,
 please refer to the `Rally installation <http://rally.readthedocs.org/en/latest/install.html#install>`_ page.
 
@@ -111,8 +115,3 @@ available options:
       --develop              Install Rally with editable source code try.
                              (Default: false)
       --no-color             Disable output coloring.
-
-
-**Notes:** ``--system`` option is not supported yet.
-
-
