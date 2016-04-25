@@ -66,7 +66,7 @@ Following config file creates a deployment with:
 
 - one OVN controller node, runs an ovn-northd, a northbound ovsdb-serverand and
   a southbound ovsdb-server.
-- two OVN sandbox farm node, runs ovs-sandboxes(each ovs-sandbox simulates one
+- one OVN sandbox farm node, runs ovs-sandboxes (each ovs-sandbox simulates one
   HV, consists of an ovn-controller, an ovs-vswitchd, and an ovsdb-server).
 
 
@@ -115,11 +115,10 @@ Following config file creates a deployment with:
 
 **Notes:**
 
-- Replace 'username' with a suitable username
+- Replace 'user' with a suitable username that can ssh to the 'host' without
+  password
 - "controller_cidr" is a private address, ovn controller node's ovsdb-server
   will listen on this ip. The IP address will be added to "net_dev" as a IP alias.
-- With config file, one ovn controller node and two farm nodes will be deployed.
-
 
 Run rally-ovs to create the deployment:
 
@@ -136,9 +135,9 @@ Run rally-ovs to create the deployment:
     Using deployment: 320115a1-0613-47a5-91f3-fc0a29a86e64
 
 After this command executed successfully, the ovn controller node has an
-running ovn-northd, northbound ovsdb-serverand and southbound ovsdb-server now,
-but the two farm nodes have no ovs-sandboxes running on them, you need use
-``task`` command to create ovs-sandboxes.
+running ovn-northd, northbound ovsdb-serverand southbound ovsdb-server now, but
+the two farm nodes have no ovs-sandboxes running on them, you need use ``task``
+command to create ovs-sandboxes.
 
 
 **Notes:** the command used here is ``rally-ovs``, not ``rally``
