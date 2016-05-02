@@ -46,8 +46,9 @@ class OvnNbctl(OvsClient):
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
 
-        def set_sandbox(self, sandbox):
+        def set_sandbox(self, sandbox, install_method="sandbox"):
             self.sandbox = sandbox
+            self.install_method = install_method
 
         def run(self, cmd, opts=[], args=[], stdout=sys.stdout, stderr=sys.stderr):
             self.cmds = self.cmds or []
@@ -75,9 +76,12 @@ class OvnNbctl(OvsClient):
 
             run_cmds = []
             if self.sandbox:
-                run_cmds.append(". %s/sandbox.rc" % self.sandbox)
+                if self.install_method == "sandbox":
+                    run_cmds.append(". %s/sandbox.rc" % self.sandbox)
+                    run_cmds.append("ovn-nbctl" + " ".join(self.cmds))
+                elif self.install_method == "docker":
+                    run_cmds.append("sudo docker exec ovn-database ovn-nbctl " + " ".join(self.cmds))
 
-            run_cmds.append("ovn-nbctl" + " ".join(self.cmds))
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
 

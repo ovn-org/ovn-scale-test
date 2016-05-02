@@ -7,10 +7,10 @@
             "name": "OvnSandbox.create_sandbox",
             "args": {
                 "sandbox_create_args": {
-                    "farm": "ovn-farm-node-0",
+                    "farm": "ovn-farm-node-vosklab8",
                     "amount": 5,
                     "batch" : 1,
-                    "start_cidr": "172.16.100.101/16",
+                    "start_cidr": "172.16.200.10/16",
                     "net_dev": "eth1",
                     "tag": "ToR1"
                 }

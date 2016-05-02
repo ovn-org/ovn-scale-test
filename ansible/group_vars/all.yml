@@ -12,6 +12,7 @@ ovn_chassis_image: "huikang/ovn-scale-test-ovn"
 
 rally_image: "huikang/ovn-scale-test-rally"
 
+
 ###################
 # Emulation options
 ###################
@@ -23,4 +24,11 @@ ovn_chassis_start_cidr: "172.16.200.10/16"
 ovn_chassis_device: "eth1"
 
 # Total number of emulated chassis
-ovn_number_chassis: 4
+ovn_number_chassis: 5
+
+
+########################
+# Rally workload options
+########################
+network_start_cidr: "172.16.201.0/24"
+network_number: "5"

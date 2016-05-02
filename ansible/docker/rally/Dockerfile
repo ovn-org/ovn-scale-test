@@ -23,7 +23,7 @@ RUN cd rally_ovn_scale_test \
 # (TODO) use master branch after the branch got merged upstream
 RUN git clone https://github.com/huikang/ovn-scale-test.git
 RUN cd ovn-scale-test \
-    && git checkout ansible-insert-rally-db \
+    && git checkout ansible-register-sandbox-rally-db \
     && ./install.sh
 
 # TO make this container detachable

@@ -7,7 +7,7 @@
             "name": "OvnSandbox.delete_sandbox",
             "args": {
                 "sandbox_delete_args": {
-                    "farm": "ovn-farm-node-0",
+                    "farm": "ovn-farm-node-vosklab8",
                     "tag": "ToR1",
                     "graceful": false
                 }

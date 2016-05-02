@@ -9,5 +9,8 @@
 
 - name: Copying over ovn deployment file on rally node
   template:
-    src: "ovn-multihost-deployment.json.j2"
-    dest: "{{ node_config_directory }}/rally/ovn-multihost-deployment.json"
+    src: "{{ item }}.json.j2"
+    dest: "{{ node_config_directory }}/rally/{{ item }}.json"
+  with_items:
+    - "ovn-multihost-deployment"
+    - "create_networks"
