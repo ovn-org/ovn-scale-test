@@ -1,0 +1,2 @@
+---
+rally_image_full: "{{ rally_image }}"

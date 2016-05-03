@@ -1,4 +1,6 @@
-image_name=ovn-scale-test
+SUBDIRS = base ovn rally
 
-image:
-	docker build --force-rm=true -t ${image_name} .
+subdirs:
+	for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir; \
+	done

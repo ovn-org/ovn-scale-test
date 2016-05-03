@@ -5,3 +5,7 @@
   roles:
     - ovn
 
+- hosts:
+    - rally
+  roles:
+    - rally

@@ -7,8 +7,10 @@ ontainer_config_directory: "/var/lib/ovn-scale-test/config_files"
 # Docker options
 ###################
 
-ovn_db_image: "huikang/ovn-scale-test"
-ovn_chassis_image: "huikang/ovn-scale-test"
+ovn_db_image: "huikang/ovn-scale-test-ovn"
+ovn_chassis_image: "huikang/ovn-scale-test-ovn"
+
+rally_image: "huikang/ovn-scale-test-rally"
 
 ###################
 # Emulation options

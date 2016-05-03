@@ -1,0 +1,21 @@
+{
+    "version": 2,
+    "title": "Delete sandbox",
+    "subtasks": [{
+        "title": "Delete sandbox on farm 0",
+        "workloads": [{
+            "name": "OvnSandbox.delete_sandbox",
+            "args": {
+                "sandbox_delete_args": {
+                    "farm": "ovn-farm-node-0",
+                    "tag": "ToR1",
+                    "graceful": false
+                }
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+                "ovn_multihost" : { "controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}
