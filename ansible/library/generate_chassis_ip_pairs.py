@@ -49,6 +49,7 @@ def main():
 
     ip_data = t_ip_data()
 
+    chassis_per_host = int(num_ip) / int(group_size)
     for i in range(0, int(num_ip)):
         '''
         cidr = start_cidr_ip.split('.')[0] + "." + \
@@ -56,7 +57,11 @@ def main():
                start_cidr_ip.split('.')[2] + "." + \
                str(int(start_cidr_ip.split('.')[3]) + i)
         '''
-        ip_data.index.append(i % int(group_size))
+        # ip_data.index.append(i % int(group_size))
+        index = i / chassis_per_host
+        if (index >= int(group_size)):
+            index = 0
+        ip_data.index.append(index)
         ip_data.ip_list.append(str(sandbox_hosts.next()))
 
     module.exit_json(changed=True,ip_index=ip_data.index, \

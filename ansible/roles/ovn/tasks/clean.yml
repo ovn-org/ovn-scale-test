@@ -34,6 +34,18 @@
     - inventory_hostname in groups['emulation-hosts']
   ignore_errors: yes
 
+- name: delete ip alias on the ovn database host
+  command: "ip a del {{ ovn_database_alias_ip }}/32 dev {{ ovn_database_device }}"
+  when:
+    - inventory_hostname in groups['ovn-database']
+
+- name: delete rally user
+  user:
+    name: rally
+    state: absent
+    remove: yes
+    move_home: yes
+
 # TODO:
 #- name: delete ip alias
 #  command:

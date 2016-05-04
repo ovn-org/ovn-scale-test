@@ -1,0 +1,24 @@
+{
+    "version": 2,
+    "title": "Create OVN logical network",
+    "subtasks": [
+    {
+        "title": "Create OVN logical network",
+        "workloads": [
+        {
+            "name": "OvnNetwork.create_networks",
+            "args": {
+                "network_create_args": {
+                    "amount": {{ network_number }},
+                    "start_cidr": "{{ network_start_cidr }}",
+                    "install_method": "docker",
+                    "physical_network": "providernet"
+                }
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+                "ovn_multihost" : {"controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}
