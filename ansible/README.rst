@@ -184,7 +184,7 @@ in the rally container.
 
 ::
 
-   rally-ovs task start /root/rally-ovn/create_networks.jso
+   rally-ovs task start /root/rally-ovn/create_networks.json
 
 
 **TODO** create network, lport, and bind

@@ -44,11 +44,8 @@ class OvnScenario(scenario.OvsScenario):
         start_cidr = lswitch_create_args.get("start_cidr", "")
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
-        install_method = lswitch_create_args.get("install_method", None)
-        if not install_method:
-            print "No install_method, use default"
-            install_method = "sandbox"
-        print "create network method: ", install_method
+        install_method = lswitch_create_args.get("install_method", "sandbox")
+        LOG.info("Create network method: %s" % install_method)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
         ovn_nbctl.set_sandbox("controller-sandbox", install_method)
@@ -235,11 +232,8 @@ class OvnScenario(scenario.OvsScenario):
         physnet = network_create_args.get("physical_network", None)
         lswitches = self._create_lswitches(network_create_args)
 
-        install_method = network_create_args.get("install_method", None)
-        if not install_method:
-            print "No install_method, use default"
-            install_method = "sandbox"
-        print "create network method: ", install_method
+        install_method = network_create_args.get("install_method", "sandbox")
+        LOG.info("Create network method: %s" % install_method)
 
         if physnet != None:
             ovn_nbctl = self.controller_client("ovn-nbctl")
