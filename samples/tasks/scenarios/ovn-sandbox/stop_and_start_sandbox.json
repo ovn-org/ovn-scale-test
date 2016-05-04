@@ -1,0 +1,23 @@
+{
+    "version": 2,
+    "title": "Start and stop sandbox",
+    "subtasks": [{
+        "title": "Start and stop sandbox",
+        "workloads": [{
+            "name": "OvnSandbox.stop_and_start_sandbox",
+            "args": {
+                "sandbox_stop_args": { "graceful": true },
+                "sandbox_start_args": {}
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+                "ovn_multihost" : { "controller": "ovn-controller-node"},
+                "sandbox" : {
+                    "farm": "ovn-farm-node-0",
+                    "tag": "ToR1"
+                }
+
+            }
+        }]
+    }]
+}
