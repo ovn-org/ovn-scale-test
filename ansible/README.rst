@@ -82,6 +82,9 @@ Add hosts to the ansible inventory file
 
     ansible/inventory/ovn-hosts
 
+The ansible node should be able to access the other nodes password-less. So ssh
+key of the ansible node should be added to the other nodes.
+
 Start by editing ansible/group_vars/all.yml to fit your testbed.
 
 For example, to define the total number of emulated chasis in the network:
@@ -135,9 +138,6 @@ The following commands are run in the ovn-rally container
 
 ::
 
-   (Generate ssh keys of the container and copy the keys to the other host
-   listed in the inventory file)
-
    rally-ovs deployment create --file /root/rally-ovn/ovn-multihost-deployment.json --name ovn-multihost
 
 
@@ -159,7 +159,11 @@ To verify the deployment, in the ovn-rally container, type
    rally-ovs deployment config
 
 
-**TODO** Register emulated sandbox in the database
+Register emulated sandboxes in the rally database
+
+::
+
+   rally-ovs task start /root/rally-ovn/workload/create_sandbox.json
 
 
 Rnning Rally Workloads
@@ -180,14 +184,31 @@ workload options" in ``ansible/group_vars/all.yml`` and (2) edit workload file
 in the rally container.
 
 
-- Create network
+- Create networks
 
 ::
 
-   rally-ovs task start /root/rally-ovn/create_networks.json
+   rally-ovs task start /root/rally-ovn/workload/create_networks.json
+
+- Create networks(lswitches), lports, and list lports
+
+::
+
+   rally-ovs task start /root/rally-ovn/workload/create_and_list_lports.json
 
 
-**TODO** create network, lport, and bind
+- Create networks, lports, and bind ports
+
+::
+
+   rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json
+
+
+To clean up the emulation environment, run
+
+::
+
+    ansible-playbook  -i ansible/inventory/ovn-hosts ansible/site.yml -e action=clean
 
 References
 ----------

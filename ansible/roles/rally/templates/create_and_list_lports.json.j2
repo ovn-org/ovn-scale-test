@@ -1,0 +1,23 @@
+{
+    "version": 2,
+    "title": "Create logical port",
+    "subtasks": [{
+        "title": "Create logical port",
+        "workloads": [{
+            "name": "OvnNorthbound.create_and_list_lports",
+            "args": {
+                "lswitch_create_args": {
+                    "install_method": "docker",
+                    "start_cidr": "{{ network_start_cidr }}",
+                    "amount": {{ network_number }}
+                },
+                "lport_create_args" : {
+                    "install_method": "docker",
+                },
+                "lports_per_lswitch": {{ ports_per_network }}
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {"ovn_multihost" : {"controller": "ovn-controller-node"}}
+        }]
+    }]
+}

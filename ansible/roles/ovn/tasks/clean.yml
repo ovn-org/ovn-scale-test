@@ -19,7 +19,7 @@
 
 - name: delete OVN chassis
   docker:
-    name: "ovn-chassis-{{ item.1 }}"
+    name: "sandbox-{{ item.1 }}"
     image: "{{ ovn_db_image_full }}"
     pull: always
     privileged: yes
@@ -38,6 +38,17 @@
   command: "ip a del {{ ovn_database_alias_ip }}/32 dev {{ ovn_database_device }}"
   when:
     - inventory_hostname in groups['ovn-database']
+  ignore_errors: yes
+
+- name: delete ip alias on the emulation host
+  command: "ip a del {{ item.1 }}/16 dev {{ ovn_chassis_device }}"
+  delegate_to: "{{ groups['emulation-hosts'][ item.0 ] }}"
+  with_together:
+    - "{{ dmi_data['ip_index'] }}"
+    - "{{ dmi_data['ip_index_list'] }}"
+  when:
+    - inventory_hostname in groups['emulation-hosts']
+  ignore_errors: yes
 
 - name: delete rally user
   user:

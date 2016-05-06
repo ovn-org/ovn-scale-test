@@ -32,3 +32,4 @@ ovn_number_chassis: 5
 ########################
 network_start_cidr: "172.16.201.0/24"
 network_number: "5"
+ports_per_network: "1"

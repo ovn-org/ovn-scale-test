@@ -14,7 +14,7 @@
 
 - name: start OVN chassis
   docker:
-    name: "ovn-chassis-{{ item.1 }}"
+    name: "sandbox-{{ item.1 }}"
     image: "{{ ovn_db_image_full }}"
     pull: always
     privileged: yes

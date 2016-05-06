@@ -48,3 +48,4 @@ doc/source/_build/
 *.swp
 
 *~
+site.retry
