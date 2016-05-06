@@ -1,0 +1,36 @@
+{
+    "version": 2,
+    "title": "Create and bind port",
+    "subtasks": [{
+        "title": "Create and bind port",
+        "workloads": [{
+            "name": "OvnNetwork.create_and_bind_ports",
+            "args": {
+                "network_create_args": {
+                    "amount": {{ network_number }},
+                    "batch": 1,
+                    "start_cidr": "{{ network_start_cidr }}",
+                    "install_method": "docker",
+                    "physical_network": "providernet"
+                },
+                "port_create_args" : {
+                    "install_method": "docker",
+                    "batch": 1
+                },
+                "ports_per_network": {{ ports_per_network }},
+                "port_bind_args": {
+                    "wait_up": true,
+                    "install_method": "docker"
+                }
+            },
+            "runner": {
+                "type": "serial","times": 1},
+            "context": {
+               "ovn_multihost" : {
+                    "controller": "ovn-controller-node"
+                },
+                "sandbox":{ "tag": "ToR1"}
+            }
+        }]
+    }]
+}

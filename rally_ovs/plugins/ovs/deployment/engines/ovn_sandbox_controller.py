@@ -94,11 +94,8 @@ class OvnSandboxControllerEngine(SandboxEngine):
             deployment_name = self.config.get("deployment_name", None)
 
 
-        install_method = self.config.get("install_method", None)
-        if not install_method:
-            print "No install_method, use default"
-            install_method = "sandbox"
-        print "Controller install method: ", install_method
+        install_method = self.config.get("install_method", "sandbox")
+        LOG.info("Controller install method: %s" % install_method)
 
         ovs_user = self.config.get("ovs_user", OVS_USER)
         ovs_controller_cidr = self.config.get("controller_cidr")

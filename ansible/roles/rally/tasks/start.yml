@@ -9,3 +9,4 @@
     state: started
     volumes:
       - "{{ node_config_directory }}/rally:/root/rally-ovn/"
+      - "{{ node_config_directory }}/rally/ssh:/root/.ssh/"
