@@ -22,6 +22,14 @@ run() {
 }
 
 
+run_service() {
+    local name=$1
+    shift
+    echo $@ > $sandbox_name/$name.sh
+    run $@
+}
+
+
 builddir=
 srcdir=
 schema=
@@ -265,9 +273,6 @@ else
 fi
 
 
-
-
-
 #
 # IP related code start
 #
@@ -393,6 +398,27 @@ function is_sandbox {
     return 0
 }
 
+
+function app_start {
+    local proc=$1
+
+    if [ ! -f $OVS_RUNDIR/$proc.sh ]; then
+        return
+    fi
+
+    if [ -f $OVS_RUNDIR/$proc.pid ]; then
+        echo "$proc is already running"
+        return
+    fi
+
+    if $(cd "$OVS_RUNDIR" && . $proc.sh) ; then
+        echo "$proc start"
+    else
+        echo "start $proc failed"
+    fi
+}
+
+
 function app_exit {
     local proc=$1
     local pid=
@@ -407,7 +433,7 @@ function app_exit {
             ovs-appctl --timeout 5 -t $OVS_RUNDIR/$proc.$pid.ctl exit || exit_success=false
             if $exit_success; then
                 local wait_until=`date +%s%3N`
-                (( wait_until += 5000 ))
+                (( wait_until += 15000 ))
 
                 while test -e "$OVS_RUNDIR"/$proc.pid; do
                     sleep 0.5;
@@ -428,6 +454,23 @@ function app_exit {
 
         rm -f $OVS_RUNDIR/$proc.$pid.ctl # the file was renamed, remove it forcely
     fi
+}
+
+function do_start {
+
+    local box_name=$1
+    if ! is_sandbox $box_name ; then
+        echo "Not found sandbox $box_name"
+        return 1
+    fi
+
+    . $box_name/sandbox.rc 2>/dev/null
+    app_start ovn-northd
+    app_start ovsdb-server-nb
+    app_start ovsdb-server-sb
+    app_start ovn-controller
+    app_start ovsdb-server
+    app_start ovs-vswitchd
 }
 
 
@@ -493,6 +536,10 @@ function cleanup_all {
     done
 }
 
+if [ X$start != X ]; then
+    do_start $start
+    exit $?
+fi
 
 if [ X$stop != X ]; then
     do_stop $stop
@@ -503,7 +550,6 @@ if $cleanup_all ; then
     cleanup_all
     exit 0
 fi
-
 
 if [ X$cleanup != X ] ; then
     do_cleanup $cleanup
@@ -604,18 +650,20 @@ EOF
 
             # Northbound db server
             prog_name='ovsdb-server-nb'
-            run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
+            run_service $prog_name ovsdb-server --detach --no-chdir \
+                --pidfile=$prog_name.pid \
                 --unixctl=$prog_name.ctl \
                 -vconsole:off -vsyslog:off -vfile:info \
                 --log-file=$prog_name.log \
-                --remote="p$OVN_NB_DB" \
+                --remote=p$OVN_NB_DB \
                 conf-nb.db ovnnb.db
             pid=`cat $sandbox_name/$prog_name.pid`
             mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
 
             # Southbound db server
             prog_name='ovsdb-server-sb'
-            run ovsdb-server --detach --no-chdir --pidfile=$prog_name.pid \
+            run_service $prog_name ovsdb-server --detach --no-chdir \
+                --pidfile=$prog_name.pid \
                 --unixctl=$prog_name.ctl \
                 -vconsole:off -vsyslog:off -vfile:info \
                 --log-file=$prog_name.log \
@@ -630,7 +678,7 @@ EOF
         touch "$sandbox"/.conf.db.~lock~
         run ovsdb-tool create conf.db "$schema"
 
-        run ovsdb-server --detach --no-chdir --pidfile \
+        run_service ovsdb-server ovsdb-server --detach --no-chdir --pidfile \
             -vconsole:off -vsyslog:off -vfile:info --log-file \
             --remote=punix:"$sandbox"/db.sock \
             conf.db
@@ -677,7 +725,7 @@ EOF
                 -- --may-exist add-br br0 \
                 -- set open_vswitch . external-ids:ovn-bridge-mappings=providernet:br0
 
-            run ovs-vswitchd --detach --no-chdir --pidfile \
+            run_service ovs-vswitchd ovs-vswitchd --detach --no-chdir --pidfile \
                             -vconsole:off -vsyslog:off -vfile:info --log-file \
                             --enable-dummy=override # -vvconn:info -vnetdev_dummy:info
 
@@ -699,13 +747,14 @@ function start_ovn {
     echo "Starting OVN"
 
     if $controller ; then
-        run ovn-northd --detach --no-chdir --pidfile \
+        run_service ovn-northd ovn-northd --detach --no-chdir --pidfile \
               -vconsole:off -vsyslog:off -vfile:info --log-file \
               --ovnnb-db=$OVN_NB_DB \
               --ovnsb-db=$OVN_SB_DB
     else
         if $ovn ; then
-            run ovn-controller --detach --no-chdir --pidfile \
+            run_service ovn-controller ovn-controller --detach --no-chdir \
+                    --pidfile \
                     -vconsole:off -vsyslog:off -vfile:info --log-file
         fi
     fi

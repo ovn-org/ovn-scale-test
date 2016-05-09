@@ -106,7 +106,6 @@ class OvnSandbox(sandbox.SandboxScenario):
         :param sandbox_create_args: see OvnSandbox.create_sandbox
 
         """
-        # TODO: if doc string is all whitespace, generate doc will failed
         sandboxes = self._create_sandbox(sandbox_create_args)
         self.sleep_between(1, 2) # xxx: add min and max sleep args - l8huang
 
@@ -121,8 +120,7 @@ class OvnSandbox(sandbox.SandboxScenario):
 
     @scenario.configure(context={})
     def delete_sandbox(self, sandbox_delete_args=None):
-        """Delete sandboxes specified by farm and/or tag.
-
+        """Delete sandboxes specified by 'sandbox_delete_args' or 'sandbox' context.
 
         :param sandbox_delete_args: dict, contains below values:
 
@@ -134,17 +132,96 @@ class OvnSandbox(sandbox.SandboxScenario):
             graceful       bool, exit processes gracefully, cleanup records in southbound DB
             ===========    ========
 
+        If 'sandbox' context is set, then the sandboxes specified by the
+        context will be used.
+
         """
         farm = sandbox_delete_args.get("farm", "")
         tag = sandbox_delete_args.get("tag", "")
         graceful = sandbox_delete_args.get("graceful", False)
 
-        sandboxes = utils.get_sandboxes(self.task["deployment_uuid"], farm, tag)
+        sandboxes = self._get_sandbox(farm, tag)
         self._delete_sandbox(sandboxes, graceful)
 
 
+    def _get_sandbox(self, farm="", tag=""):
+        if "sandboxes" in self.context:
+            ret = self.context["sandboxes"]
+        else:
+            ret = utils.get_sandboxes(self.task["deployment_uuid"], farm, tag)
+
+        return ret
 
 
+    @scenario.configure(context={})
+    def start_sandbox(self, sandbox_start_args=None):
+        """Start sandboxes specified by 'sandbox_stop_args' or 'sandbox' context.
+        If they are already running, do nothing.
+
+        :param sandbox_start_args: dict, contains below values:
+
+            ===========    ========
+            key            desc
+            ===========    ========
+            farm           str, the name of farm node
+            tag            str, a tag used to identify a set of sandboxes
+            ===========    ========
+
+        If 'sandbox' context is set, then the sandboxes specified by the
+        context will be used.
+
+        """
+
+        farm = sandbox_start_args.get("farm", "")
+        tag = sandbox_start_args.get("tag", "")
+        sandboxes = self._get_sandbox(farm, tag)
+
+        self._start_sandbox(sandboxes)
 
 
+    @scenario.configure(context={})
+    def stop_sandbox(self, sandbox_stop_args=None):
+        """Stop sandboxes specified by 'sandbox_stop_args' or 'sandbox' context.
+
+        :param sandbox_stop_args: dict, contains below values:
+
+            ===========    ========
+            key            desc
+            ===========    ========
+            farm           str, the name of farm node
+            tag            str, a tag used to identify a set of sandboxes
+            graceful       bool, exit processes gracefully, cleanup records in southbound DB
+            ===========    ========
+
+        If 'sandbox' context is set, then the sandboxes specified by the
+        context will be used.
+
+        """
+
+        farm = sandbox_stop_args.get("farm", "")
+        tag = sandbox_stop_args.get("tag", "")
+        graceful = sandbox_stop_args.get("graceful", False)
+
+        sandboxes = self._get_sandbox(farm, tag)
+        self._stop_sandbox(sandboxes, graceful)
+
+
+    @scenario.configure(context={})
+    def stop_and_start_sandbox(self, sandbox_stop_args=None,
+                               sandbox_start_args=None):
+
+        """Stop sandboxes specified by 'sandbox_stop_args' or 'sandbox' context,
+        then start up them again.
+
+        :param sandbox_stop_args: see OvnSandbox.stop_sandbox
+        :param sandbox_start_args: see OvnSandbox.star_sandbox
+
+        """
+        farm = sandbox_stop_args.get("farm", "")
+        tag = sandbox_stop_args.get("tag", "")
+        graceful = sandbox_stop_args.get("graceful", False)
+
+        sandboxes = self._get_sandbox(farm, tag)
+        self._stop_sandbox(sandboxes, graceful)
+        self._start_sandbox(sandboxes)
 

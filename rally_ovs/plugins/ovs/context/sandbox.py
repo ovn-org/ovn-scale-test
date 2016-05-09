@@ -35,6 +35,12 @@ class Sandbox(context.Context):
         "type": "object",
         "$schema": consts.JSON_SCHEMA,
         "properties": {
+            "farm": {
+                "type": "string"
+            },
+            "tag": {
+                "type": "string"
+            }
         },
         "additionalProperties": True
     }
@@ -49,6 +55,7 @@ class Sandbox(context.Context):
         deploy_uuid = self.task["deployment_uuid"]
         deployments = db.deployment_list(parent_uuid=deploy_uuid)
 
+        farm = self.config.get("farm", "")
         tag = self.config.get("tag", "")
 
         sandboxes = []
@@ -58,8 +65,11 @@ class Sandbox(context.Context):
                 continue
 
             info = res[0].info
+            if farm and farm != info["farm"]:
+                continue
+
             for k,v in six.iteritems(info["sandboxes"]):
-                if v == tag:
+                if tag == "all" or v == tag:
                     sandbox = {"name": k, "tag": v, "farm": info["farm"]}
                     sandboxes.append(sandbox)
 

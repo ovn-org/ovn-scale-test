@@ -16,17 +16,18 @@
 import sys
 import netaddr
 import six
-
 from collections import defaultdict
 
 from rally import exceptions
 from rally_ovs.plugins.ovs import scenario
 from rally.task import atomic
-
+from rally.common import logging
 from rally.common import objects
 
 from netaddr.ip import IPRange
 from rally_ovs.plugins.ovs.consts import ResourceType
+
+LOG = logging.getLogger(__name__)
 
 
 class SandboxScenario(scenario.OvsScenario):
@@ -201,6 +202,29 @@ class SandboxScenario(scenario.OvsScenario):
             self._delete_sandbox_resource(k, to_delete)
 
 
+    @atomic.action_timer("sandbox.start_sandbox")
+    def _start_sandbox(self, sandboxes):
+
+        for sandbox in sandboxes:
+            name = sandbox["name"]
+            ssh = self.farm_clients(sandbox["farm"])
+            LOG.info("Start sandbox %s on %s" % (name, sandbox["farm"]))
+            cmd = "./ovs-sandbox.sh --ovn --start %s" % name
+            ssh.run(cmd, stdout=sys.stdout, stderr=sys.stderr);
+
+
+    @atomic.action_timer("sandbox.stop_sandbox")
+    def _stop_sandbox(self, sandboxes, graceful=False):
+
+        graceful = "--graceful" if graceful else ""
+
+        for sandbox in sandboxes:
+            ssh = self.farm_clients(sandbox["farm"])
+            name = sandbox["name"]
+            LOG.info("Stop sandbox %s on %s" % (name, sandbox["farm"]))
+            cmd = "./ovs-sandbox.sh --ovn %s --stop  %s" % \
+                    (graceful, name)
+            ssh.run(cmd, stdout=sys.stdout, stderr=sys.stderr);
 
 
 
