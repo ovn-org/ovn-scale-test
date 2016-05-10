@@ -27,7 +27,6 @@ class OvsScenario(scenario.Scenario):
     """Base class for all OVS scenarios."""
 
 
-
     def __init__(self, context=None):
         super(OvsScenario, self).__init__(context)
 
@@ -37,17 +36,17 @@ class OvsScenario(scenario.Scenario):
             cred = v["credential"]
             self._controller_clients = ovsclients.Clients(cred)
 
-
         self._farm_clients = {}
         for k,v in six.iteritems(multihost_info["farms"]):
             cred = v["credential"]
             self._farm_clients[k] = ovsclients.Clients(cred)
 
+        self.install_method = multihost_info["install_method"]
+
 
     def controller_client(self, client_type="ssh"):
         client = getattr(self._controller_clients, client_type)
         return client()
-
 
 
     def farm_clients(self, name, client_type="ssh"):

@@ -87,7 +87,10 @@ class OvnSandboxFarmEngine(SandboxEngine):
         server = self.servers[0]
         dep_name = self.deployment["name"]
         LOG.info("Deploy farm node %s" % dep_name)
-        self._deploy(server)
+
+        install_method = self.config.get("install_method", "sandbox")
+        LOG.info("Farm install method: %s" % install_method)
+        self._deploy(server, install_method)
 
         ovs_user = self.config.get("ovs_user", OVS_USER)
         credential = server.get_credentials()
@@ -103,8 +106,6 @@ class OvnSandboxFarmEngine(SandboxEngine):
                              info={"farm": dep_name, "sandboxes": []})
 
         return {"admin": None}
-
-
 
 
     def cleanup(self):

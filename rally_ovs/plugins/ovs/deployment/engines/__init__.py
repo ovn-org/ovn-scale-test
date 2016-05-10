@@ -21,4 +21,3 @@ def get_updated_server(server, **kwargs):
     credentials = server.get_credentials()
     credentials.update(kwargs)
     return provider.Server.from_credentials(credentials)
-
