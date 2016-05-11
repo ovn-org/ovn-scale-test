@@ -10,6 +10,7 @@ RUN apt-get install -y --no-install-recommends \
             libpq-dev \
             wget \
             python-pip \
+	    openssh-server \
     && apt-get clean
 
 # Download Rally customized for OVN
@@ -25,11 +26,6 @@ RUN git clone https://github.com/huikang/ovn-scale-test.git
 RUN cd ovn-scale-test \
     && git checkout docker-rally-ovs-create-network \
     && ./install.sh
-
-# TO make this container detachable
-RUN apt-get install -y --no-install-recommends \
-            openssh-server \
-    && apt-get clean
 
 RUN mkdir /var/run/sshd
 CMD ["/usr/sbin/sshd", "-D"]

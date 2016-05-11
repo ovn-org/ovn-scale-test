@@ -14,3 +14,24 @@
   with_items:
     - "ovn-multihost-deployment"
     - "create_networks"
+
+- name: Ensuring ssh config directories exist on rally node
+  file:
+    path: "{{ node_config_directory }}/rally/ssh"
+    state: "directory"
+    recurse: yes
+
+- name: Copy ssh keys to the rally node
+  copy:
+    src: "/root/.ssh/{{ item }}"
+    dest: "{{ node_config_directory }}/rally/ssh/{{ item }}"
+    mode: 0600
+  with_items:
+    - "id_rsa.pub"
+    - "id_rsa"
+
+- name: Copy ssh config to the rally node
+  copy:
+    src: "config"
+    dest: "{{ node_config_directory }}/rally/ssh/"
+    mode: 0600

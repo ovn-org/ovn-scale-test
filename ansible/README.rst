@@ -82,6 +82,9 @@ Add hosts to the ansible inventory file
 
     ansible/inventory/ovn-hosts
 
+The ansible node should be able to access the other nodes password-less. So ssh
+key of the ansible node should be added to the other nodes.
+
 Start by editing ansible/group_vars/all.yml to fit your testbed.
 
 For example, to define the total number of emulated chasis in the network:
@@ -134,9 +137,6 @@ the ovn emulation environment in the rally database, like to [1].
 The following commands are run in the ovn-rally container
 
 ::
-
-   (Generate ssh keys of the container and copy the keys to the other host
-   listed in the inventory file)
 
    rally-ovs deployment create --file /root/rally-ovn/ovn-multihost-deployment.json --name ovn-multihost
 
