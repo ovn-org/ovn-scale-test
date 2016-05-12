@@ -39,11 +39,12 @@ The recommended emulation target requirements:
 Installing Dependencies
 -----------------------
 
-The deploy node needs ansible. Docker and docker-py are required on the other nodes.
+The deploy node needs ansible. All the other nodes should have docker engine
+installed. The following python package are required on all the nodes as well.
 
 ::
 
-    pip install -U docker-py
+    pip install -U docker-py netaddr
 
 Building OVN test Container Images
 ----------------------------------
@@ -110,6 +111,15 @@ Run the ansible playbook
 The above command deploys ovn-database and the emulated chassis. On the rally
 node, an ovn-rally container is also launched as well as the deployment file and
 workload files.
+
+Ansible allows you to overide the variables in group_vars/all.yml. For example,
+some variables are defined in a separate file, named
+/etc/new-nodes-variables.yml. To ask ansible to override the default variables,
+run the playbook as follows:
+
+::
+
+    ansible-playbook  -i ansible/inventory/ovn-hosts ansible/site.yml -e @/etc/new-nodes-variables.yml -e action=deploy
 
 The fastest way during evaluation to re-deployment is to remove the OVN
 containers and re-deploy.
