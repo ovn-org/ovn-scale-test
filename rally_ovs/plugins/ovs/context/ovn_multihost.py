@@ -32,11 +32,9 @@ def get_ovn_multihost_info(deploy_uuid, controller_name):
 
     deployments = db.deployment_list(parent_uuid=deploy_uuid)
 
-    multihost_info = {"controller" : {}, "farms" : {} }
-
+    multihost_info = {"controller" : {}, "farms" : {}, "install_method" : "sandbox"}
 
     for dep in deployments:
-
         cred = db.resource_get_all(dep["uuid"], type=ResourceType.CREDENTIAL)[0]
         cred = copy.deepcopy(cred.info)
         name = dep["name"]
@@ -47,6 +45,9 @@ def get_ovn_multihost_info(deploy_uuid, controller_name):
             multihost_info["controller"][name] = info
         else:
             multihost_info["farms"][name] = info
+
+        if 'install_method' in dep.config:
+            multihost_info["install_method"] = dep.config["install_method"]
 
     return multihost_info
 

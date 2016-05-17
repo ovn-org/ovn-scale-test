@@ -95,12 +95,13 @@ EOF''' % (http_proxy, https_proxy)
 
 
 
-    def _deploy(self, server):
+    def _deploy(self, server, install_method="sandbox"):
 
         ovs_user = self.config.get("ovs_user", OVS_USER)
         self._prepare(server, ovs_user)
 
-        self._install_ovs(server)
+        if install_method == "sandbox":
+            self._install_ovs(server)
 
 
 

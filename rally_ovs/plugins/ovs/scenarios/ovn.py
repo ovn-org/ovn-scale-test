@@ -44,11 +44,10 @@ class OvnScenario(scenario.OvsScenario):
         start_cidr = lswitch_create_args.get("start_cidr", "")
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
-        install_method = lswitch_create_args.get("install_method", "sandbox")
-        LOG.info("Create network method: %s" % install_method)
 
+        LOG.info("Create lswitches method: %s" % self.install_method)
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
@@ -232,12 +231,10 @@ class OvnScenario(scenario.OvsScenario):
         physnet = network_create_args.get("physical_network", None)
         lswitches = self._create_lswitches(network_create_args)
 
-        install_method = network_create_args.get("install_method", "sandbox")
-        LOG.info("Create network method: %s" % install_method)
-
+        LOG.info("Create network method: %s" % self.install_method)
         if physnet != None:
             ovn_nbctl = self.controller_client("ovn-nbctl")
-            ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+            ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
             ovn_nbctl.enable_batch_mode()
 
             for lswitch in lswitches:
