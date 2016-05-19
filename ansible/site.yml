@@ -3,9 +3,11 @@
     - ovn-database
     - emulation-hosts
   roles:
+    - common
     - ovn
 
 - hosts:
     - rally
   roles:
+    - common
     - rally
