@@ -13,6 +13,42 @@
     dest: "{{ node_config_directory }}/rally/{{ item }}.json"
   with_items:
     - "ovn-multihost-deployment"
+
+- name: Ensuring ssh config directories exist on rally node
+  file:
+    path: "{{ node_config_directory }}/rally/ssh"
+    state: "directory"
+    recurse: yes
+
+- name: Copy ssh keys to the rally node
+  copy:
+    src: "/root/.ssh/{{ item }}"
+    dest: "{{ node_config_directory }}/rally/ssh/{{ item }}"
+    mode: 0600
+  with_items:
+    - "id_rsa.pub"
+    - "id_rsa"
+
+- name: Copy ssh config to the rally node
+  copy:
+    src: "config"
+    dest: "{{ node_config_directory }}/rally/ssh/"
+    mode: 0600
+
+- name: Ensuring workload directories exist on rally node
+  file:
+    path: "{{ node_config_directory }}/rally/workload"
+    state: "directory"
+    recurse: yes
+
+- name: Copying over workload files on rally node
+  template:
+    src: "{{ item }}.json.j2"
+    dest: "{{ node_config_directory }}/rally/workload/{{ item }}.json"
+  with_items:
+    - "create_sandbox"
+    - "create_and_bind_ports"
+    - "create_and_list_lports"
     - "create_networks"
 
 - name: Ensuring ssh config directories exist on rally node

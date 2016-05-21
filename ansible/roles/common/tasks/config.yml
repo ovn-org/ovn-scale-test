@@ -1,0 +1,13 @@
+---
+- name: Generate IP lists pair for emulated chassis
+  generate_chassis_ip_pairs:
+    start_cidr: "{{ ovn_chassis_start_cidr }}"
+    group_size: "{{ groups['emulation-hosts'] | length }}"
+    num_ip: "{{ ovn_number_chassis }}"
+  register: dmi_data
+
+- debug: msg="{{ item.0}}; {{ item.1 }}; {{ item.2 }}/{{ dmi_data['prefixlen'] }}"
+  with_together:
+    - "{{ dmi_data['farm_index'] }}"
+    - "{{ dmi_data['num_sandbox_farm'] }}"
+    - "{{ dmi_data['start_cidr_farm'] }}"
