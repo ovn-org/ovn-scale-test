@@ -1,0 +1,29 @@
+{% set farm = farm or "ovn-farm-node-0" %}
+{% set amount = amount or 1 %}
+{% set start_cidr = start_cidr or "192.168.64.0/16" %}
+{% set tag = tag or "" %}
+{
+    "version": 2,
+    "title": "Create sandbox",
+    "subtasks": [{
+        "title": "Create sandboxes",
+        "workloads": [{
+            "name": "OvnSandbox.create_sandbox",
+            "args": {
+                "sandbox_create_args": {
+                    "farm": "{{farm}}",
+                    "amount": {{amount}},
+                    "batch": 50,
+                    "start_cidr": "{{start_cidr}}",
+                    "net_dev": "eth0",
+                    "tag": "{{tag}}"
+                }
+            },
+            "runner": { "type": "serial", "times": 1 },
+            "context": {
+               "ovn_multihost" : {"controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}
+
