@@ -1,0 +1,24 @@
+{
+    "version": 2,
+    "title": "Create sandbox",
+    "subtasks": [{
+        "title": "Create sandbox on farm 0",
+        "workloads": [{
+            "name": "OvnSandbox.create_sandbox",
+            "args": {
+                "sandbox_create_args": {
+                    "farm": "ovn-farm-node-{{ hostvars[groups['emulation-hosts'][item.0 | int]]['ansible_hostname'] }}",
+                    "amount": {{ item.1 }},
+                    "batch" : 1,
+                    "start_cidr": "{{ item.2 }}/{{ dmi_data['prefixlen'] }}",
+                    "net_dev": "{{ ovn_chassis_device }}",
+                    "tag": "ToR1"
+                }
+            },
+            "runner": {"type": "serial", "times": 1},
+            "context": {
+                "ovn_multihost" : { "controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}

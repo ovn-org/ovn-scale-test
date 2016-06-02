@@ -40,14 +40,14 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             start_cidr=dict(required=True),
-            group_size=dict(required=False, default="null"),
+            num_emulation_hosts=dict(required=False, default="null"),
             num_ip=dict(required=True)
         ),
         supports_check_mode=True
     )
 
     start_cidr = module.params['start_cidr']
-    group_size = module.params['group_size']
+    num_emulation_hosts = module.params['num_emulation_hosts']
     num_ip = module.params['num_ip']
 
     sandbox_cidr = netaddr.IPNetwork(start_cidr)
@@ -55,7 +55,7 @@ def main():
 
     ip_data = t_ip_data()
 
-    chassis_per_host = int(num_ip) / int(group_size)
+    chassis_per_host = int(num_ip) / int(num_emulation_hosts)
     overflow = 0
     for i in range(0, int(num_ip)):
         '''
@@ -64,10 +64,10 @@ def main():
                start_cidr_ip.split('.')[2] + "." + \
                str(int(start_cidr_ip.split('.')[3]) + i)
         '''
-        # ip_data.index.append(i % int(group_size))
+        # ip_data.index.append(i % int(num_emulation_hosts))
         index = i / chassis_per_host
-        if (index >= int(group_size)):
-            index = 0
+        if (index >= int(num_emulation_hosts)):
+            index = int(num_emulation_hosts) - 1
             overflow += 1
         ip_data.index.append(index)
         ip_data.ip_list.append(str(sandbox_hosts.next()))
@@ -75,16 +75,16 @@ def main():
     farm_data = t_farm_data()
     num_sandbox = 0
     sandbox_hosts = netaddr.iter_iprange(sandbox_cidr.ip, sandbox_cidr.last)
-    for i in range(0, int(group_size)):
+    for i in range(0, int(num_emulation_hosts)):
         farm_data.farm_index.append(i)
 
         num_sandbox = chassis_per_host
-        if i == 0:
+        if (i == int(num_emulation_hosts) - 1):
             num_sandbox = chassis_per_host + overflow
         farm_data.num_sandbox_farm.append(num_sandbox)
 
         farm_data.start_cidr_farm.append(str(sandbox_hosts.next()))
-        for i in range (0, num_sandbox):
+        for i in range (0, num_sandbox - 1):
             sandbox_hosts.next()
 
     module.exit_json(changed=True,ip_index=ip_data.index, \
