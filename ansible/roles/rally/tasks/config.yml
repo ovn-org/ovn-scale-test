@@ -51,6 +51,15 @@
     - "create_and_list_lports"
     - "create_networks"
 
+- name: Copying over create-sandbox file on farm node
+  template:
+    src: "create_sandbox-farm.json.j2"
+    dest: "{{ node_config_directory }}/rally/workload/create-sandbox-{{ hostvars[groups['emulation-hosts'][item.0 | int]]['ansible_hostname'] }}.json"
+  with_together:
+    - "{{ dmi_data['farm_index'] }}"
+    - "{{ dmi_data['num_sandbox_farm'] }}"
+    - "{{ dmi_data['start_cidr_farm'] }}"
+
 - name: Ensuring ssh config directories exist on rally node
   file:
     path: "{{ node_config_directory }}/rally/ssh"
