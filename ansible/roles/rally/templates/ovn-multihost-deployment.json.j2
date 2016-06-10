@@ -6,7 +6,7 @@
         "deployment_name": "ovn-controller-node",
         "ovs_repo": "https://github.com/openvswitch/ovs.git",
         "ovs_branch": "master",
-        "ovs_user": "rally",
+        "ovs_user": "{{ deploy_user }}",
         "net_dev": "{{ ovn_database_device }}",
         "controller_cidr": "{{ ovn_database_alias_ip }}",
         "provider": {
@@ -26,7 +26,7 @@
             "deployment_name": "ovn-farm-node-{{ hostvars[host]['ansible_hostname'] }}",
             "ovs_repo" : "https://github.com/openvswitch/ovs.git",
             "ovs_branch" : "master",
-            "ovs_user" : "rally",
+            "ovs_user": "{{ deploy_user }}",
             "provider": {
                 "type": "OvsSandboxProvider",
                 "credentials": [
