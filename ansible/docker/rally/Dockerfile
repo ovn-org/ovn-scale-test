@@ -21,8 +21,7 @@ RUN cd rally_ovn_scale_test \
     && ./install_rally.sh
 
 # Install OVN scale test plugin for rally
-# (TODO) use master branch after the branch got merged upstream
-RUN git clone https://github.com/huikang/ovn-scale-test.git
+RUN git clone https://github.com/openvswitch/ovn-scale-test.git
 RUN cd ovn-scale-test \
     && ./install.sh
 
