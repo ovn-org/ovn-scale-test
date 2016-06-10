@@ -1,12 +1,21 @@
 ---
-- name: delete OVN database
+- name: delete OVN control plane containers
   docker:
-    name: ovn-database
+    name: "{{ item }}"
     image: "{{ ovn_db_image_full }}"
     pull: always
     state: absent
+  with_items:
+    - "ovn-north-database"
+    - "ovn-south-database"
+    - "ovn-northd"
   when:
-    - inventory_hostname in groups['ovn-database']
+    - inventory_hostname in groups['ovn-control']
+
+- name: delete shared volume for ovn control plane
+  command: docker volume rm ovn-run
+  when:
+    - inventory_hostname in groups['ovn-control']
 
 - name: delete OVN chassis
   docker:
@@ -25,14 +34,14 @@
     - inventory_hostname in groups['emulation-hosts']
   ignore_errors: yes
 
-- name: delete ip alias on the ovn database host
-  command: "ip a del {{ ovn_database_alias_ip }}/32 dev {{ ovn_database_device }}"
+- name: delete ip alias on the ovn control host
+  command: "ip a del {{ ovn_database_alias_ip }} dev {{ ovn_database_device }}"
   when:
-    - inventory_hostname in groups['ovn-database']
+    - inventory_hostname in groups['ovn-control']
   ignore_errors: yes
 
 - name: delete ip alias on the emulation host
-  command: "ip a del {{ item.1 }}/16 dev {{ ovn_chassis_device }}"
+  command: "ip a del {{ item.1 }}/{{ dmi_data['prefixlen'] }} dev {{ ovn_chassis_device }}"
   delegate_to: "{{ groups['emulation-hosts'][ item.0 ] }}"
   with_together:
     - "{{ dmi_data['ip_index'] }}"

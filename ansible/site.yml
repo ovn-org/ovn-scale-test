@@ -1,6 +1,6 @@
 ---
 - hosts:
-    - ovn-database
+    - ovn-control
     - emulation-hosts
   roles:
     - common

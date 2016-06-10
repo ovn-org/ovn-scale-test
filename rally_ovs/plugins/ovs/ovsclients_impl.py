@@ -61,7 +61,7 @@ class OvnNbctl(OvsClient):
                     cmd = itertools.chain(["ovn-nbctl"], opts, [cmd], args)
                     self.cmds.append(" ".join(cmd))
                 elif self.install_method == "docker":
-                    self.cmds.append("sudo docker exec ovn-database ovn-nbctl " + cmd + " " + " ".join(args))
+                    self.cmds.append("sudo docker exec ovn-north-database ovn-nbctl " + cmd + " " + " ".join(args))
 
             self.ssh.run("\n".join(self.cmds),
                          stdout=stdout, stderr=stderr)
@@ -79,7 +79,7 @@ class OvnNbctl(OvsClient):
                     run_cmds.append(". %s/sandbox.rc" % self.sandbox)
                     run_cmds.append("ovn-nbctl" + " ".join(self.cmds))
                 elif self.install_method == "docker":
-                    run_cmds.append("sudo docker exec ovn-database ovn-nbctl " + " ".join(self.cmds))
+                    run_cmds.append("sudo docker exec ovn-north-database ovn-nbctl " + " ".join(self.cmds))
 
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)

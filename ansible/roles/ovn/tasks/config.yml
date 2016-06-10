@@ -7,7 +7,7 @@
   with_items:
     - "openvswitch-ovn-db"
   when:
-    - inventory_hostname in groups['ovn-database']
+    - inventory_hostname in groups['ovn-control']
 
 - name: Copying over config.json files for OVN database
   template:
@@ -16,7 +16,7 @@
   with_items:
     - "openvswitch-ovn-db"
   when:
-    - inventory_hostname in groups['ovn-database']
+    - inventory_hostname in groups['ovn-control']
 
 - name: Ensuring config directories exist on chassis host
   file:
