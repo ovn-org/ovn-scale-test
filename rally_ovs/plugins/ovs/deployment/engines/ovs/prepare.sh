@@ -6,9 +6,13 @@ OVS_USER=$1
 
 echo "Prepare user $OVS_USER for ovs deployment"
 
-useradd $OVS_USER -m || echo "User $OVS_USER is already exists" >&2
-mkdir -m 700 /home/$OVS_USER/.ssh || true
-cp /root/.ssh/authorized_keys /home/$OVS_USER/.ssh/ || true
+# Check for an existing user
+_USER=$(grep $OVS_USER /etc/passwd)
+if [ "$_USER" == "" ]; then
+    useradd $OVS_USER -m || echo "Error adding user $OVS_USER" >&2
+    mkdir -m 700 /home/$OVS_USER/.ssh || true
+fi
+cp -f /root/.ssh/authorized_keys /home/$OVS_USER/.ssh/ || true
 chown -R $OVS_USER /home/$OVS_USER/.ssh || true
 
 if [ `cat /etc/sudoers | grep $OVS_USER -c` = 0 ]; then
