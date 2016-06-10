@@ -173,7 +173,9 @@ Register emulated sandboxes in the rally database
 
 ::
 
-   rally-ovs task start /root/rally-ovn/workload/create_sandbox.json
+   rally-ovs task start /root/rally-ovn/workload/create-sandbox-${HOSTNAME}.json
+
+NOTE: The name of the file above includes the hostname of the host itself.
 
 Create sandboxes on multiple farm nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
