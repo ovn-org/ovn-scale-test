@@ -41,9 +41,9 @@
     - inventory_hostname in groups['emulation-hosts']
   ignore_errors: yes
 
-- name: delete rally user
+- name: delete deploy user
   user:
-    name: rally
+    name: "{{ deploy_user }}"
     state: absent
     remove: yes
     move_home: yes

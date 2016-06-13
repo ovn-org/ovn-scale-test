@@ -3,6 +3,8 @@
 node_config_directory: "/etc/ovn-scale-test"
 ontainer_config_directory: "/var/lib/ovn-scale-test/config_files"
 
+deploy_user: "rally"
+
 ###################
 # Docker options
 ###################
