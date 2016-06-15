@@ -49,3 +49,6 @@ doc/source/_build/
 
 *~
 site.retry
+
+# generated ci/ansible/docker-ovn-hosts file
+ci/ansible/docker-ovn-hosts

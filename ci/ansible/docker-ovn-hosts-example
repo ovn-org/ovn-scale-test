@@ -1,0 +1,11 @@
+# You should only add one IP address in this role. The node in this role runs
+# the OVN databse container
+[ovn-control]
+REPLACE_IP
+
+# Add host IPs to run emulated OVN chassis
+[emulation-hosts]
+REPLACE_IP      provider_ip=REPLACE_IP
+
+[rally]
+REPLACE_IP
