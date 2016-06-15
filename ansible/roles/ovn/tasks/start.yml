@@ -1,16 +1,56 @@
 ---
-- name: start OVN database
+- name: create shared volume for ovn control plane processes
+  command: docker volume create --name ovn-run
+  when:
+    - inventory_hostname in groups['ovn-control']
+
+- name: start OVN northbound database
   docker:
-    name: ovn-database
+    name: ovn-north-database
     image: "{{ ovn_db_image_full }}"
     pull: always
     privileged: yes
     net: host
     detach: True
     state: started
-    command: "ovn_set_database {{ ovn_database_alias_ip}} {{ ovn_database_device }}"
+    cpu_set: "{{ north_db_cpu_set }}"
+    command: "ovn-sandbox-north-ovsdb.sh {{ ovn_database_alias_ip}} {{ ovn_database_device }}"
+    volumes:
+      - ovn-run:/usr/local/var/run/openvswitch/
   when:
-    - inventory_hostname in groups['ovn-database']
+    - inventory_hostname in groups['ovn-control']
+
+- name: start OVN southbound database
+  docker:
+    name: ovn-south-database
+    image: "{{ ovn_db_image_full }}"
+    pull: always
+    privileged: yes
+    net: host
+    detach: True
+    state: started
+    cpu_set: "{{ south_db_cpu_set }}"
+    command: "ovn-sandbox-south-ovsdb.sh {{ ovn_database_alias_ip}} {{ ovn_database_device }}"
+    volumes:
+      - ovn-run:/usr/local/var/run/openvswitch/
+  when:
+    - inventory_hostname in groups['ovn-control']
+
+- name: start OVN northd
+  docker:
+    name: ovn-northd
+    image: "{{ ovn_db_image_full }}"
+    pull: always
+    privileged: yes
+    net: host
+    detach: True
+    state: started
+    cpu_set: "{{ northd_cpu_set }}"
+    command: "ovn-sandbox-northd.sh {{ ovn_database_alias_ip}} {{ ovn_database_device }}"
+    volumes:
+      - ovn-run:/usr/local/var/run/openvswitch/
+  when:
+    - inventory_hostname in groups['ovn-control']
 
 - name: start OVN chassis
   docker:
