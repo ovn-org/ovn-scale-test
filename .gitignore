@@ -52,3 +52,6 @@ site.retry
 
 # generated ci/ansible/docker-ovn-hosts file
 ci/ansible/docker-ovn-hosts
+
+# The generated HTML files
+ci/*.html
