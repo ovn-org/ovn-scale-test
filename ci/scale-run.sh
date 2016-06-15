@@ -6,20 +6,8 @@ source ovn-scale.conf
 OVS_REPO=$1
 OVS_BRANCH=$2
 
-mkdir -p $OVN_DOCKER_ROOT
-pushd $OVN_DOCKER_ROOT
-
-# Install OVN Scale Test
-if [ ! -d $OVN_SCALE_REPO_NAME ]; then
-    git clone $OVN_SCALE_REPO
-    pushd $OVN_SCALE_REPO_NAME
-    git fetch
-    git checkout $OVN_SCALE_BRANCH
-    popd
-fi
-
 # Build the docker containers
-pushd $OVN_SCALE_REPO_NAME
+pushd $OVN_SCALE_TOP
 cd ansible/docker
 make
 popd
@@ -28,7 +16,7 @@ popd
 # TODO(mestery): Loop through all hosts in the "[emulation-hosts]" section.
 #                For now, this assumes a single host, so not necessary until
 #                that assumption changes.
-pushd $OVN_SCALE_REPO_NAME
+pushd $OVN_SCALE_TOP
 sudo /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site.yml -e @$OVN_DOCKER_VARS \
      --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" -e action=deploy
 popd
@@ -65,5 +53,3 @@ TASKID=$(docker exec ovn-rally rally task list --uuids-only)
 docker exec ovn-rally rally task report $TASKID --out /root/create-and-bind-ports-output.html
 docker cp ovn-rally:/root/create-and-bind-ports-output.html .
 docker exec ovn-rally rally task delete --uuid $TASKID
-
-popd
