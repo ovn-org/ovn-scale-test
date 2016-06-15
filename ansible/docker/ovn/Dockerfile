@@ -6,9 +6,9 @@ ARG ovs_branch=master
 
 # Download OVS from git master
 RUN git clone $ovs_repo \
+    && cd /ovs \
     && git fetch $ovs_repo $ovs_branch \
     && git checkout FETCH_HEAD \
-    && cd /ovs \
     && ./boot.sh \
     && ./configure \
     &&  make -j4 \
