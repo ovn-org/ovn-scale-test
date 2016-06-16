@@ -4,7 +4,8 @@
 source ovn-scale.conf
 
 # Install prerequisites
-sudo apt-get install -y apt-transport-https ca-certificates
+sudo apt-get update -y
+sudo apt-get install -y apt-transport-https ca-certificates python-dev libffi-dev libssl-dev gcc make binutils
 sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
 
 if [ ! -f /etc/apt/sources.list.d/docker.list ] ; then
@@ -42,6 +43,14 @@ if [ "$OVNKEYTHERE" == "" ] ; then
 fi
 EOF
 
+sudo su -m root <<'EOF'
+OVNKEY="$(cat /root/.ssh/id_rsa.pub | cut -d " " -f 2)"
+OVNKEYTHERE=$(grep $OVNKEY /root/.ssh/authorized_keys)
+if [ "$OVNKEYTHERE" == "" ] ; then
+    cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+fi
+EOF
+
 # Install the docker engine
 sudo apt-get install -y docker-engine
 sudo service docker start
@@ -50,10 +59,15 @@ sudo service docker start
 EXISTING_DOCKER=$(cat /etc/group | grep docker)
 if [ "$EXISTING_DOCKER" == "" ]; then
     sudo groupadd docker
+fi
+EXISTING_DOCKER_USER=$(cat /etc/group | grep docker | grep $OVNUSER)
+if [ "$EXISTING_DOCKER_USER" == "" ]; then
     sudo usermod -aG docker $OVNUSER
-    echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
-    echo "         Please reboot the box, log back in, and re-run $0."
-    exit 1
+    if [ "$OVNSUDO" == "" ] ; then
+        echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
+        echo "         Please reboot the box, log back in, and re-run $0."
+        exit 1
+    fi
 fi
 
 # Install python dependencies
@@ -62,6 +76,7 @@ sudo pip install --upgrade pip
 sudo pip install -U docker-py netaddr
 sudo apt-get remove -y ansible
 sudo pip install ansible==2.0.2.0
+sudo pip install --upgrade setuptools
 
 # Prepate the docker-ovn-hosts file
 LOCALIP=$(ifconfig eth0|grep 'inet ' | sed -e 's/ \+/ /g' | cut -d " " -f 3 | cut -d ":" -f 2)
