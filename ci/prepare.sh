@@ -46,12 +46,12 @@ EOF
 sudo apt-get install -y docker-engine
 sudo service docker start
 
-# Create a docker group and add ubuntu user to this group
+# Create a docker group and add $OVNUSER user to this group
 EXISTING_DOCKER=$(cat /etc/group | grep docker)
 if [ "$EXISTING_DOCKER" == "" ]; then
     sudo groupadd docker
-    sudo usermod -aG docker ubuntu
-    echo "WARNING: The docker group was created and the ubuntu user added to this group."
+    sudo usermod -aG docker $OVNUSER
+    echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
     echo "         Please reboot the box, log back in, and re-run $0."
     exit 1
 fi
