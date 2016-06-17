@@ -10,4 +10,4 @@ popd
 $OVNSUDO docker rmi ovn-scale-test-ovn
 $OVNSUDO docker rmi ovn-scale-test-base
 # Find the <none> image and delete it
-$OVNSUDO docker rmi $(docker images | grep none | awk -F' +' '{print $3}')
+$OVNSUDO docker rmi $($OVNSUDO docker images | grep none | awk -F' +' '{print $3}')
