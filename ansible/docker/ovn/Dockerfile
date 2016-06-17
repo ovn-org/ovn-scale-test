@@ -1,13 +1,14 @@
 FROM ovn-scale-test-base
 
 # Used to specify a specific version of OVS to build with
-ARG ovs_repo=https://github.com/openvswitch/ovs.git
-ARG ovs_branch=master
+ARG ovsrepo
+ARG ovsbranch
 
 # Download OVS from git master
-RUN git clone $ovs_repo \
+RUN echo "ovsrepo=$ovsrepo ovsbranch=$ovsbranch" \
+    && git clone $ovsrepo \
     && cd /ovs \
-    && git fetch $ovs_repo $ovs_branch \
+    && git fetch $ovsrepo $ovsbranch \
     && git checkout FETCH_HEAD \
     && ./boot.sh \
     && ./configure \

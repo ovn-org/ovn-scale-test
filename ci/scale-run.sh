@@ -9,7 +9,7 @@ OVS_BRANCH=$2
 # Build the docker containers
 pushd $OVN_SCALE_TOP
 cd ansible/docker
-make
+make ovsrepo=$OVS_REPO ovsbranch=$OVS_BRANCH
 popd
 
 # Deploy the containers
