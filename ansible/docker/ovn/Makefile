@@ -2,9 +2,13 @@ image_name=ovn-scale-test-ovn
 
 ifndef ovsrepo
 ovs_repo=https://github.com/openvswitch/ovs.git
+else
+ovs_repo=${ovsrepo}
 endif
 ifndef ovsbranch
 ovs_branch=master
+else
+ovs_branch=${ovsbranch}
 endif
 
 image:
