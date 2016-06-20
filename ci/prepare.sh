@@ -84,5 +84,8 @@ cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansibl
 
 echo "docker-ovn-hosts file"
 cat ansible/docker-ovn-hosts
+
+sudo iptables -I INPUT 1 -p tcp --dport ssh -j ACCEPT
+
 echo "iptables:"
 sudo iptables -L
