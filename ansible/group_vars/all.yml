@@ -43,5 +43,5 @@ ports_per_network: "1"
 ########################
 # OVS Repository to test
 ########################
-ovn_repo: "https://github.com/openvswitch/ovs.git"
-ovn_branch: "master"
+ovs_repo: "https://github.com/openvswitch/ovs.git"
+ovs_branch: "master"
