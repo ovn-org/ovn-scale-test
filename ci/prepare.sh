@@ -89,3 +89,8 @@ sudo iptables -I INPUT 1 -p tcp --dport ssh -j ACCEPT
 
 echo "iptables:"
 sudo iptables -L
+
+echo "User's authorized_keys:"
+cat ~/.ssh/authorized_keys
+echo "Root's authorized_keys:"
+sudo cat /root/.ssh/authorized_keys
