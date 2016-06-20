@@ -86,6 +86,7 @@ echo "docker-ovn-hosts file"
 cat ansible/docker-ovn-hosts
 
 sudo iptables -I INPUT 1 -p tcp --dport ssh -j ACCEPT
+sudo iptables -I OUTPUT 1 -p tcp --sport 22 -j ACCEPT
 
 echo "iptables:"
 sudo iptables -L
