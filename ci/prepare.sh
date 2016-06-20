@@ -65,6 +65,24 @@ cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansibl
 
 # Allow root ssh logins from the local IP and docker subnet
 sudo su -m root <<'EOF'
+if [ ! -f /root/.ssh/config ] ; then
+    echo "UserKnownHostsFile=/dev/null" >> /root/.ssh/config
+    echo "StrictHostKeyChecking=no" >> /root/.ssh/config
+    echo "LogLevel=ERROR" >> /root/.ssh/config
+else
+    UKHS=$(grep UserKnownHostsFile /root/.ssh/config)
+    if [ "$UKHS" == "" ] ; then
+        echo "UserKnownHostsFile=/dev/null" >> /root/.ssh/config
+    fi
+    SHKC=$(grep StrictHostKeyChecking /root/.ssh/config)
+    if [ "$SHKC" == "" ] ; then
+        echo "StrictHostKeyChecking=no" >> /root/.ssh/config
+    fi
+    LL=$(grep LogLevel /root/.ssh/config)
+    if [ "$LL" == "" ] ; then
+        echo "LogLevel=ERROR" >> /root/.ssh/config
+    fi
+fi
 LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
 LRT=$(grep "Match host $LOCALIP" /etc/ssh/sshd_config)
 if [ "$LRT" == "" ] ; then
