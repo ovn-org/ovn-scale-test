@@ -82,16 +82,12 @@ sudo pip install --upgrade setuptools
 LOCALIP=$(ifconfig eth0|grep 'inet ' | sed -e 's/ \+/ /g' | cut -d " " -f 3 | cut -d ":" -f 2)
 cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
 
-echo "docker-ovn-hosts file"
-cat ansible/docker-ovn-hosts
-
-sudo iptables -I INPUT 1 -p tcp --dport ssh -j ACCEPT
-sudo iptables -I OUTPUT 1 -p tcp --sport 22 -j ACCEPT
-
-echo "iptables:"
-sudo iptables -L
-
-echo "User's authorized_keys:"
-cat ~/.ssh/authorized_keys
-echo "Root's authorized_keys:"
-sudo cat /root/.ssh/authorized_keys
+# Allow root ssh logins from the local IP and docker subnet
+sudo su -m root <<'EOF'
+LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+echo "Match host $LOCALIP" >> /etc/ssh/sshd_config
+echo "    PermitRootLogin without-password" >> /etc/ssh/sshd_config
+echo "Match host 172.17.*.*" >> /etc/ssh/sshd_config
+echo "    PermitRootLogin without-password" >> /etc/ssh/sshd_config
+EOF
+sudo /etc/init.d/ssh restart
