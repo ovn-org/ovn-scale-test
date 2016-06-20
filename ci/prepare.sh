@@ -80,5 +80,9 @@ sudo pip install --upgrade setuptools
 
 # Prepate the docker-ovn-hosts file
 LOCALIP=$(ifconfig eth0|grep 'inet ' | sed -e 's/ \+/ /g' | cut -d " " -f 3 | cut -d ":" -f 2)
-
 cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
+
+echo "docker-ovn-hosts file"
+cat ansible/docker-ovn-hosts
+echo "iptables:"
+sudo iptables -L
