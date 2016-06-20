@@ -51,25 +51,6 @@ if [ "$OVNKEYTHERE" == "" ] ; then
 fi
 EOF
 
-# Install the docker engine
-sudo apt-get install -y docker-engine
-sudo service docker start
-
-# Create a docker group and add $OVNUSER user to this group
-EXISTING_DOCKER=$(cat /etc/group | grep docker)
-if [ "$EXISTING_DOCKER" == "" ]; then
-    sudo groupadd docker
-fi
-EXISTING_DOCKER_USER=$(cat /etc/group | grep docker | grep $OVNUSER)
-if [ "$EXISTING_DOCKER_USER" == "" ]; then
-    sudo usermod -aG docker $OVNUSER
-    if [ "$OVNSUDO" == "" ] ; then
-        echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
-        echo "         Please reboot the box, log back in, and re-run $0."
-        exit 1
-    fi
-fi
-
 # Install python dependencies
 sudo apt-get install -y python-pip
 sudo pip install --upgrade pip
@@ -97,3 +78,22 @@ if [ "$LDT" == "" ] ; then
 fi
 EOF
 sudo /etc/init.d/ssh restart
+
+# Install the docker engine
+sudo apt-get install -y docker-engine
+sudo service docker start
+
+# Create a docker group and add $OVNUSER user to this group
+EXISTING_DOCKER=$(cat /etc/group | grep docker)
+if [ "$EXISTING_DOCKER" == "" ]; then
+    sudo groupadd docker
+fi
+EXISTING_DOCKER_USER=$(cat /etc/group | grep docker | grep $OVNUSER)
+if [ "$EXISTING_DOCKER_USER" == "" ]; then
+    sudo usermod -aG docker $OVNUSER
+    if [ "$OVNSUDO" == "" ] ; then
+        echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
+        echo "         Please reboot the box, log back in, and re-run $0."
+        exit 1
+    fi
+fi
