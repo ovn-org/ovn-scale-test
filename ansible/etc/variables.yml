@@ -1,7 +1,7 @@
 ---
 
 node_config_directory: "/etc/ovn-scale-test"
-ontainer_config_directory: "/var/lib/ovn-scale-test/config_files"
+container_config_directory: "/var/lib/ovn-scale-test/config_files"
 
 ###################
 # Docker options
