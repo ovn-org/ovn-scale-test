@@ -2,6 +2,11 @@
 OVN Scale Test
 ==============
 
+Build Status:
+-------------
+
+.. image:: https://travis-ci.org/mestery.svg?branch=travis-ci-ansible
+    :target: https://travis-ci.org/mestery/ovn-scale-test
 
 What is OVN Scale Test
 ======================
