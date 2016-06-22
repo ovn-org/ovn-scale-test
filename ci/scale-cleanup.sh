@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Save trace setting
+XTRACE=$(set +o | grep xtrace)
+set -o xtrace
+
 # Read variables
 source ovn-scale.conf
 
@@ -14,3 +18,6 @@ NONEIMAGE=$($OVNSUDO docker images | grep none | awk -F' +' '{print $3}')
 if [ "$NONEIMAGE" != "" ] ; then
     $OVNSUDO docker rmi $NONEIMAGE
 fi
+
+# Restore xtrace
+$XTRACE

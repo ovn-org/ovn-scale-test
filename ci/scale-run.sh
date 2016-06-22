@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Save trace setting
+XTRACE=$(set +o | grep xtrace)
+set -o xtrace
+
 # Read variables
 source ovn-scale.conf
 
@@ -57,3 +61,6 @@ TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-bind-ports-output.html
 $OVNSUDO docker cp ovn-rally:/root/create-and-bind-ports-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
+
+# Restore xtrace
+$XTRACE
