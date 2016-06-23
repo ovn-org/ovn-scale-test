@@ -91,34 +91,34 @@ class OvnNbctl(OvsClient):
             params = [name]
 
 
-            self.run("lswitch-add", args=params)
+            self.run("ls-add", args=params)
 
             return {"name":name}
 
         def lswitch_del(self, name):
             params = [name]
-            self.run("lswitch-del", args=params)
+            self.run("ls-del", args=params)
 
 
 
         def lswitch_list(self):
-            self.run("lswitch-list")
+            self.run("ls-list")
 
         def lport_add(self, lswitch, name):
             params =[lswitch, name]
-            self.run("lport-add", args=params)
+            self.run("lsp-add", args=params)
 
             return {"name":name}
 
 
         def lport_list(self, lswitch):
             params =[lswitch]
-            self.run("lport-list", args=params)
+            self.run("lsp-list", args=params)
 
 
         def lport_del(self, name):
             params = [name]
-            self.run("lport-del", args=params)
+            self.run("lsp-del", args=params)
 
         '''
         param address: [mac,ip], [mac] ...
@@ -129,24 +129,24 @@ class OvnNbctl(OvsClient):
             for i in addresses:
                 params += ["\ ".join(i)]
 
-            self.run("lport-set-addresses", args=params)
+            self.run("lsp-set-addresses", args=params)
 
 
         def lport_set_port_security(self, name, *addresses):
             params = [name]
             params += addresses
-            self.run("lport-set-port-security", args=params)
+            self.run("lsp-set-port-security", args=params)
 
 
         def lport_set_type(self, name, type):
             params = [name, type]
-            self.run("lport-set-type", args=params)
+            self.run("lsp-set-type", args=params)
 
 
         def lport_set_options(self, name, *options):
             params = [name]
             params += options
-            self.run("lport-set-options", args=params)
+            self.run("lsp-set-options", args=params)
 
         def acl_add(self, lswitch, direction, priority, match, action,
                     log=False):

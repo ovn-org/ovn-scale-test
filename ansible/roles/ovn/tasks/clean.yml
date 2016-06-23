@@ -3,7 +3,7 @@
   docker:
     name: "{{ item }}"
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     state: absent
   with_items:
     - "ovn-north-database"
@@ -21,7 +21,7 @@
   docker:
     name: "sandbox-{{ item.1 }}"
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     net: host
     detach: True

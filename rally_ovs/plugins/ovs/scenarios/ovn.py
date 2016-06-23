@@ -298,7 +298,7 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.enable_batch_mode(True)
 
         for lport in lports:
-            ovn_nbctl.wait_until('Logical_Port', lport["name"], ('up', 'true'))
+            ovn_nbctl.wait_until('Logical_Switch_Port', lport["name"], ('up', 'true'))
 
         ovn_nbctl.flush()
 

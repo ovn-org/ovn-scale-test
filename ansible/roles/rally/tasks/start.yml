@@ -3,7 +3,7 @@
   docker:
     name: ovn-rally
     image: "{{ rally_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     detach: True
     state: started

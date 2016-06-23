@@ -41,14 +41,17 @@
   when:
     - inventory_hostname in groups['emulation-hosts']
 
-- name: Create user on all hosts
+- name: Create user "{{ deploy_user }}" on all hosts
   user:
     name: "{{ deploy_user }}"
     generate_ssh_key: yes
     ssh_key_file: .ssh/id_rsa
+  when: deploy_user != 'root'
 
 - name: Copy authorized keys to user
   command: "cp -f /root/.ssh/authorized_keys /home/{{ deploy_user }}/.ssh/"
+  when: deploy_user != 'root'
 
 - name: Change ownership for authorized keys
   command: "chown -R {{ deploy_user }} /home/{{ deploy_user }}/.ssh"
+  when: deploy_user != 'root'
