@@ -3,15 +3,19 @@
 node_config_directory: "/etc/ovn-scale-test"
 container_config_directory: "/var/lib/ovn-scale-test/config_files"
 
+deploy_user: "root"
+
 ###################
 # Docker options
 ###################
 
-ovn_db_image: "huikang/ovn-scale-test-ovn-local-master"
-ovn_chassis_image: "huikang/ovn-scale-test-ovn-local-master"
+ovn_db_image: "ovn-scale-test-ovn"
+ovn_chassis_image: "ovn-scale-test-ovn"
 
-rally_image: "huikang/ovn-scale-test-rally-local-master"
+rally_image: "ovn-scale-test-rally"
 
+# Valid options are [ missing, always ]
+image_pull_policy: "missing"
 
 ###################
 # Emulation options

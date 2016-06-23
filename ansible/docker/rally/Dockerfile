@@ -21,8 +21,10 @@ RUN cd rally_ovn_scale_test \
     && ./install_rally.sh
 
 # Install OVN scale test plugin for rally
-RUN git clone https://github.com/openvswitch/ovn-scale-test.git
+# TODO (huikang): switch to upstream repo after this PR merged
+RUN git clone https://github.com/huikang/ovn-scale-test.git
 RUN cd ovn-scale-test \
+    && git checkout ci-images \
     && ./install.sh
 
 RUN mkdir /var/run/sshd

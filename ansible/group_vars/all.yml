@@ -14,6 +14,8 @@ ovn_chassis_image: "huikang/ovn-scale-test-ovn"
 
 rally_image: "huikang/ovn-scale-test-rally"
 
+# Valid options are [ missing, always ]
+image_pull_policy: "always"
 
 ###################
 # Emulation options

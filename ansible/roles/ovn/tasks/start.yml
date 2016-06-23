@@ -8,7 +8,7 @@
   docker:
     name: ovn-north-database
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     net: host
     detach: True
@@ -24,7 +24,7 @@
   docker:
     name: ovn-south-database
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     net: host
     detach: True
@@ -40,7 +40,7 @@
   docker:
     name: ovn-northd
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     net: host
     detach: True
@@ -56,7 +56,7 @@
   docker:
     name: "sandbox-{{ item.1 }}"
     image: "{{ ovn_db_image_full }}"
-    pull: always
+    pull: "{{ image_pull_policy }}"
     privileged: yes
     net: host
     detach: True
