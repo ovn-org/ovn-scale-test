@@ -1,0 +1,30 @@
+{
+    "version": 2,
+    "title": "Create and list ACLs",
+    "subtasks": [{
+        "title": "Create ACLs",
+        "workloads": [{
+            "name": "OvnNorthbound.create_and_list_acls",
+            "args": {
+                "lswitch_create_args": {
+                    "amount": {{ network_number }},
+                    "batch": 1,
+                    "start_cidr": "{{ network_start_cidr }}",
+                    "physical_network": "providernet"
+                },
+                "lport_create_args" : {
+                    "batch": 1
+                },
+                "lports_per_lswitch": {{ ports_per_network }},
+                "acl_create_args" : {
+                    "direction": "to-lport",
+                    "action":"allow"},
+                "acls_per_port": {{ acls_per_port }}
+            },
+            "runner": { "type": "serial", "times": 1},
+            "context": {
+               "ovn_multihost" : {"controller": "ovn-controller-node"}
+            }
+        }]
+    }]
+}
