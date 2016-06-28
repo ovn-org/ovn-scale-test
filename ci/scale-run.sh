@@ -57,6 +57,18 @@ $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-
 $OVNSUDO docker cp ovn-rally:/root/create-and-list-lports-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.1.json
+TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
+$OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-acls.1-output.html
+$OVNSUDO docker cp ovn-rally:/root/create-and-list-acls.1-output.html .
+$OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
+
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.2.json
+TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
+$OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-acls.2-output.html
+$OVNSUDO docker cp ovn-rally:/root/create-and-list-acls.2-output.html .
+$OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
+
 $OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-bind-ports-output.html
