@@ -3,6 +3,9 @@
 node_config_directory: "/etc/ovn-scale-test"
 container_config_directory: "/var/lib/ovn-scale-test/config_files"
 
+# For all-in-one deployment, use "root"
+deploy_user: "root"
+
 ###################
 # Docker options
 ###################
@@ -33,3 +36,11 @@ ovn_number_chassis: 5
 network_start_cidr: "172.16.201.0/24"
 network_number: "5"
 ports_per_network: "5"
+
+acls_per_port: "1"
+
+########################
+# OVS Repository to test
+########################
+ovs_repo: "https://github.com/openvswitch/ovs.git"
+ovs_branch: "master"

@@ -253,6 +253,13 @@ in the rally container.
    rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json
 
 
+- Create networks, lports, and acls
+
+::
+
+   rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.json
+
+
 To clean up the emulation environment, run
 
 ::
