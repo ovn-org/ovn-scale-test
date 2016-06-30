@@ -56,3 +56,4 @@
     state: absent
     remove: yes
     move_home: yes
+  when: deploy_user != 'root'
