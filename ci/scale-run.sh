@@ -10,6 +10,20 @@ source ovn-scale.conf
 OVS_REPO=$1
 OVS_BRANCH=$2
 
+function check_container_failure {
+    sleep 5
+
+    docker ps -a
+    failed_containers=$(docker ps -a --format "{{.Names}}" --filter status=exited)
+
+    if [ "$failed_containers" ]; then
+        for failed in ${failed_containers}; do
+            docker logs --tail all ${failed}
+        done
+        exit 1
+    fi
+}
+
 # Build the docker containers
 pushd $OVN_SCALE_TOP
 cd ansible/docker
@@ -31,7 +45,9 @@ fi
 popd
 
 # Verify the containers are running
-# TODO(mestery): Actually verify everything is connected
+check_container_failure
+
+# TODO(mestery): Verifying everything is connected
 $OVNSUDO docker exec ovn-south-database ovn-sbctl show
 
 # Create the rally deployment
