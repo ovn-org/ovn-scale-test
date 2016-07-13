@@ -64,25 +64,33 @@ $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 $OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_networks.json
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-networks-output.html
+$OVNSUDO bash -c "docker exec ovn-rally rally test results $TASKID > /root/create-networks-data.json"
 $OVNSUDO docker cp ovn-rally:/root/create-networks-output.html .
+$OVNSUDO docker cp ovn-rally:/root/create-networks-data.json .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
 $OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_lports.json
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-lports-output.html
+$OVNSUDO bash -c "docker exec ovn-rally rally test results $TASKID > /root/create-and-list-lports-data.json"
 $OVNSUDO docker cp ovn-rally:/root/create-and-list-lports-output.html .
+$OVNSUDO docker cp ovn-rally:/root/create-and-list-lports-data.json .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
 $OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.json
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-acls-output.html
+$OVNSUDO bash -c "docker exec ovn-rally rally test results $TASKID > /root/create-and-list-acls-data.json"
 $OVNSUDO docker cp ovn-rally:/root/create-and-list-acls-output.html .
+$OVNSUDO docker cp ovn-rally:/root/create-and-list-acls-data.json .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
 $OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-bind-ports-output.html
+$OVNSUDO bash -c "docker exec ovn-rally rally test results $TASKID > /root/create-and-bind-ports-data.json"
 $OVNSUDO docker cp ovn-rally:/root/create-and-bind-ports-output.html .
+$OVNSUDO docker cp ovn-rally:/root/create-and-bind-ports-data.json .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
 $OVNSUDO docker ps
