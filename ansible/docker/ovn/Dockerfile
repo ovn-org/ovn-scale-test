@@ -5,13 +5,13 @@ ARG ovsrepo
 ARG ovsbranch
 
 # Download OVS from git master
-RUN echo "ovsrepo=$ovsrepo ovsbranch=$ovsbranch" \
+RUN echo "ovsrepo=$ovsrepo ovsbranch=$ovsbranch configflags=$configflags" \
     && git clone $ovsrepo \
     && cd /ovs \
     && git fetch $ovsrepo $ovsbranch \
     && git checkout FETCH_HEAD \
     && ./boot.sh \
-    && ./configure \
+    && ./configure $configflags \
     &&  make -j4 \
     &&  make install
 
