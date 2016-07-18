@@ -9,8 +9,9 @@ FAILED=0
 
 OVS_REPO=${1:-https://github.com/openvswitch/ovs.git}
 OVS_BRANCH=${2:-master}
+CONFIG_FLAG=${3:---enable-Werror}
 
-echo "OVS_REPO=${OVS_REPO} OVS_BRANCH=${OVS_BRANCH}"
+echo "OVS_REPO=${OVS_REPO} OVS_BRANCH=${OVS_BRANCH} CONFIG_FLAG=${CONFIG_FLAG}"
 
 # A combined script to run all the things
 
@@ -18,7 +19,7 @@ echo "OVS_REPO=${OVS_REPO} OVS_BRANCH=${OVS_BRANCH}"
 ./prepare.sh || FAILED=$(( $FAILED + 1 ))
 
 # Run the testsuite
-./scale-run.sh $OVS_REPO $OVS_BRANCH || FAILED=$(( $FAILED + 1 ))
+./scale-run.sh $OVS_REPO $OVS_BRANCH $CONFIG_FLAG || FAILED=$(( $FAILED + 1 ))
 
 # Clean things up
 ./scale-cleanup.sh || FAILED=$(( $FAILED + 1 ))

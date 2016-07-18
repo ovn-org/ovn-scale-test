@@ -9,6 +9,7 @@ source ovn-scale.conf
 
 OVS_REPO=$1
 OVS_BRANCH=$2
+CONFIG_FLAG=$3
 
 function check_container_failure {
     sleep 5
@@ -27,7 +28,7 @@ function check_container_failure {
 # Build the docker containers
 pushd $OVN_SCALE_TOP
 cd ansible/docker
-make ovsrepo=$OVS_REPO ovsbranch=$OVS_BRANCH
+make ovsrepo=$OVS_REPO ovsbranch=$OVS_BRANCH configflag=$CONFIG_FLAG
 popd
 $OVNSUDO docker images
 
@@ -37,7 +38,7 @@ $OVNSUDO docker images
 #                that assumption changes.
 pushd $OVN_SCALE_TOP
 $OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site.yml -e @$OVN_DOCKER_VARS \
-     --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" -e action=deploy
+     --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" --extra-vars "config_flag=$CONFIG_FLAG" -e action=deploy
 if [ "$?" != "0" ] ; then
     echo "Deploying failed, exiting"
     return 1
