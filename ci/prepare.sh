@@ -119,7 +119,7 @@ if [ "$INSTALLDOCKER" == "True" ] ; then
         if [ "$OVNSUDO" == "" ] ; then
             echo "WARNING: The docker group was created and the $OVNUSER user added to this group."
             echo "         Please reboot the box, log back in, and re-run $0."
-            exit 1
+            return 1
         fi
     fi
 fi

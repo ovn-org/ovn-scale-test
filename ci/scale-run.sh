@@ -20,7 +20,7 @@ function check_container_failure {
         for failed in ${failed_containers}; do
             docker logs --tail all ${failed}
         done
-        exit 1
+        return 1
     fi
 }
 
@@ -40,7 +40,7 @@ $OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site.yml -
      --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" -e action=deploy
 if [ "$?" != "0" ] ; then
     echo "Deploying failed, exiting"
-    exit 1
+    return 1
 fi
 popd
 
