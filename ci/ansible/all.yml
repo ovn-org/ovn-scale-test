@@ -9,10 +9,10 @@ deploy_user: "root"
 # Docker options
 ###################
 
-ovn_db_image: "huikang/ovn-scale-test-ovn"
-ovn_chassis_image: "huikang/ovn-scale-test-ovn"
+ovn_db_image: "ovn-scale-test-ovn"
+ovn_chassis_image: "ovn-scale-test-ovn"
 
-rally_image: "huikang/ovn-scale-test-rally"
+rally_image: "ovn-scale-test-rally"
 
 # Valid options are [ missing, always ]
 image_pull_policy: "missing"
