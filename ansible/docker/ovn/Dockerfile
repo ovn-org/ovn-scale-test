@@ -3,6 +3,7 @@ FROM ovn-scale-test-base
 # Used to specify a specific version of OVS to build with
 ARG ovsrepo
 ARG ovsbranch
+ARG configflags
 
 # Download OVS from git master
 RUN echo "ovsrepo=$ovsrepo ovsbranch=$ovsbranch configflags=$configflags" \

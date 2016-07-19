@@ -11,11 +11,10 @@ else
 ovs_branch=${ovsbranch}
 endif
 ifndef configflags
-config_flags=--enable-Werror
+config_flags="--enable-Werror"
 else
 config_flags=${configflags}
 endif
- 
 
 image:
 	echo "ovs_repo: ${ovs_repo} ovs_branch: ${ovs_branch}"
