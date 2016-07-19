@@ -18,13 +18,16 @@ echo "OVS_REPO=${OVS_REPO} OVS_BRANCH=${OVS_BRANCH} CONFIG_FLAG=${CONFIG_FLAG}"
 # Prepare the environment
 ./prepare.sh || FAILED=$(( $FAILED + 1 ))
 
+# resave trace setting
+set -o xtrace
+
 # Run the testsuite
 ./scale-run.sh $OVS_REPO $OVS_BRANCH $CONFIG_FLAG || FAILED=$(( $FAILED + 1 ))
 
 # Clean things up
 ./scale-cleanup.sh || FAILED=$(( $FAILED + 1 ))
 
-return $FAILED
-
 # Restore xtrace
 $XTRACE
+
+exit $FAILED
