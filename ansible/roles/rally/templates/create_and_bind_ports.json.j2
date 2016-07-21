@@ -13,7 +13,7 @@
                     "physical_network": "providernet"
                 },
                 "port_create_args" : {
-                    "batch": 1
+                    "batch": {{ ports_created_batch_size }}
                 },
                 "ports_per_network": {{ ports_per_network }},
                 "port_bind_args": {

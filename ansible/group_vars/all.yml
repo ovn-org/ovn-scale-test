@@ -41,6 +41,7 @@ northd_cpu_set: ""
 network_start_cidr: "172.16.201.0/24"
 network_number: "5"
 ports_per_network: "1"
+ports_created_batch_size: "1"
 
 acls_per_port: "1"
 
