@@ -90,6 +90,10 @@ else
     fi
 fi
 LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+if [ "$LOCALIP" == "" ] ; then
+    # Try bond0
+    LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+fi
 LRT=$(grep "Match host $LOCALIP" /etc/ssh/sshd_config)
 if [ "$LRT" == "" ] ; then
     echo "Match host $LOCALIP" >> /etc/ssh/sshd_config
