@@ -32,6 +32,8 @@ Documentation
 `OVN Scale Test documentation on ReadTheDocs <http://ovn-scale-test.readthedocs.org/en/latest/>`_
 is a perfect place to start learning about it.
 
+`Container-based scale test <https://github.com/openvswitch/ovn-scale-test/tree/master/ansible>`_
+
 
 Links
 ----------------------
