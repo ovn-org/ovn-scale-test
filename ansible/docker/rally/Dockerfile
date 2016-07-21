@@ -21,7 +21,7 @@ RUN cd rally_ovn_scale_test \
     && ./install_rally.sh
 
 # Install OVN scale test plugin for rally
-RUN git clone https://github.com/openvswitch/ovn-scale-test.git
+COPY ovn-scale-test ovn-scale-test
 RUN cd ovn-scale-test \
     && ./install.sh
 
