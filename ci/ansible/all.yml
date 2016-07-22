@@ -21,7 +21,7 @@ image_pull_policy: "missing"
 # Emulation options
 ###################
 
-ovn_database_alias_ip: "172.16.20.100"
+ovn_database_alias_ip: "172.16.20.100/16"
 ovn_database_device: "eth0"
 
 ovn_chassis_start_cidr: "172.16.200.10/16"
@@ -38,6 +38,7 @@ network_start_cidr: "172.16.201.0/24"
 network_number: "5"
 ports_per_network: "10"
 ports_created_batch_size: "1"
+networks_created_batch_size: "1"
 acls_per_port: "5"
 
 ################

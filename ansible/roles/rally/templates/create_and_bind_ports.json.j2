@@ -8,7 +8,7 @@
             "args": {
                 "network_create_args": {
                     "amount": {{ network_number }},
-                    "batch": 1,
+                    "batch": {{ networks_created_batch_size }},
                     "start_cidr": "{{ network_start_cidr }}",
                     "physical_network": "providernet"
                 },
