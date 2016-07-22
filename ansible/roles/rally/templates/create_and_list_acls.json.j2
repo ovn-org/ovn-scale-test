@@ -8,12 +8,12 @@
             "args": {
                 "lswitch_create_args": {
                     "amount": {{ network_number }},
-                    "batch": 1,
+                    "batch": {{ networks_created_batch_size }},
                     "start_cidr": "{{ network_start_cidr }}",
                     "physical_network": "providernet"
                 },
                 "lport_create_args" : {
-                    "batch": 1
+                    "batch": {{ ports_created_batch_size }}
                 },
                 "lports_per_lswitch": {{ ports_per_network }},
                 "acl_create_args" : {
