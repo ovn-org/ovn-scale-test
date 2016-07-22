@@ -25,6 +25,18 @@ function check_container_failure {
     fi
 }
 
+function check_ovn_rally {
+    output_file=$1
+    count=`cat $output_file | grep total | grep 100 | wc -l`
+    if [ $count -ne 0 ]
+    then
+        echo "Rally run succeeded"
+    else
+        echo "Rally run failed"
+        exit 1
+    fi
+}
+
 # Build the docker containers
 pushd $OVN_SCALE_TOP
 cd ansible/docker
@@ -55,14 +67,16 @@ $OVNSUDO docker exec ovn-south-database ovn-sbctl show
 $OVNSUDO docker exec ovn-rally rally-ovs deployment create --file /root/rally-ovn/ovn-multihost-deployment.json --name ovn-multihost
 
 # Register the emulated sandboxes in the rally database
-$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create-sandbox-$OVN_RALLY_HOSTNAME.json
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create-sandbox-$OVN_RALLY_HOSTNAME.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-sandbox-output.html
 $OVNSUDO docker cp ovn-rally:/root/create-sandbox-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
 # Run tests
-$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_networks.json
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_networks.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 # NOTE(mestery): HTML and JSON data are collected differently, look to consolidate
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-networks-output.html
@@ -70,7 +84,8 @@ $OVNSUDO docker exec ovn-rally rally task results $TASKID > ./create-networks-da
 $OVNSUDO docker cp ovn-rally:/root/create-networks-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
-$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_lports.json
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_lports.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 # NOTE(mestery): HTML and JSON data are collected differently, look to consolidate
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-lports-output.html
@@ -78,7 +93,8 @@ $OVNSUDO docker exec ovn-rally rally task results $TASKID > ./create-and-list-lp
 $OVNSUDO docker cp ovn-rally:/root/create-and-list-lports-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
-$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.json
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 # NOTE(mestery): HTML and JSON data are collected differently, look to consolidate
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-list-acls-output.html
@@ -86,7 +102,8 @@ $OVNSUDO docker exec ovn-rally rally task results $TASKID > ./create-and-list-ac
 $OVNSUDO docker cp ovn-rally:/root/create-and-list-acls-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 
-$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_and_bind_ports.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
 TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
 # NOTE(mestery): HTML and JSON data are collected differently, look to consolidate
 $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-and-bind-ports-output.html
