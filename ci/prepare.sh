@@ -67,6 +67,10 @@ sudo pip install --upgrade setuptools
 
 # Prepate the docker-ovn-hosts file
 LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+if [ "$LOCALIP" == "" ] ; then
+    # Try bond0
+    LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+fi
 cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
 
 # Allow root ssh logins from the local IP and docker subnet
