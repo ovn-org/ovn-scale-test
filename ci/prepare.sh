@@ -132,5 +132,11 @@ if [ "$INSTALLDOCKER" == "True" ] ; then
     fi
 fi
 
+# Increase maxkeys, see Docker PR here:
+# https://github.com/cloudfoundry/bosh/issues/1340
+$OVNSUDO sysctl -w kernel/keys/root_maxkeys=10000000
+$OVNSUDO sysctl -w kernel/keys/maxkeys=10000000
+$OVNSUDO /etc/init.d/docker restart
+
 # Restore xtrace
 $XTRACE
