@@ -21,8 +21,11 @@ echo "OVS_REPO=${OVS_REPO} OVS_BRANCH=${OVS_BRANCH} CONFIG_FLAGS=${CONFIG_FLAGS}
 # resave trace setting
 set -o xtrace
 
+# Create the docker containers
+./scale-hosts.sh $OVS_REPO $OVS_BRANCH $CONFIG_FLAGS || FAILED=$(( $FAILED + 1 ))
+
 # Run the testsuite
-./scale-run.sh $OVS_REPO $OVS_BRANCH $CONFIG_FLAGS || FAILED=$(( $FAILED + 1 ))
+./scale-test.sh
 
 # Clean things up
 ./scale-cleanup.sh || FAILED=$(( $FAILED + 1 ))
