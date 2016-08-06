@@ -172,6 +172,7 @@ function start_ovs {
     OVSDB_REMOTE=""
 
     touch "$sandbox"/.conf.db.~lock~
+    rm -f conf.db
     run ovsdb-tool create conf.db "$schema"
 
     run ovsdb-server --detach --no-chdir --pidfile \
