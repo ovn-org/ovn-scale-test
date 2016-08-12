@@ -124,8 +124,8 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.enable_batch_mode()
 
         base_mac = [i[:2] for i in self.task["uuid"].split('-')]
+        base_mac[0] = str(hex(int(base_mac[0], 16) & 254))
         base_mac[3:] = ['00']*3
-
 
         flush_count = batch
         lports = []
