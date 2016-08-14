@@ -102,6 +102,18 @@ def get_lswitch_info(info):
     return lswitches
 
 
+def get_of_in_port(of_port_list_raw, port_name_full):
+    # NOTE (huikang): the max length of portname shown in ovs-ofctl show is 15
+    port_name = port_name_full[0:15]
+    lines = of_port_list_raw.splitlines()
+    line = ""
+    for line in lines:
+        if (line.find(port_name) >= 0):
+                break
+    position = line.find("(")
+    return line[:position]
+
+
 def set_colval_args(*col_values):
     args = []
     for entry in col_values:

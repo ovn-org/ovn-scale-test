@@ -38,6 +38,7 @@ class OvnScenario(scenario.OvsScenario):
 
         print("create lswitch")
         self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
+        self.port_mac = dict()
 
         amount = lswitch_create_args.get("amount", 1)
         batch = lswitch_create_args.get("batch", amount)
@@ -124,6 +125,7 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.enable_batch_mode()
 
         base_mac = [i[:2] for i in self.task["uuid"].split('-')]
+        base_mac[0] = str(hex(int(base_mac[0], 16) & 254))
         base_mac[3:] = ['00']*3
 
 
@@ -138,6 +140,7 @@ class OvnScenario(scenario.OvsScenario):
 
             ovn_nbctl.lport_set_addresses(name, [mac, ip])
             ovn_nbctl.lport_set_port_security(name, mac)
+            self.port_mac[name] = mac
 
             lports.append(lport)
 
@@ -250,6 +253,43 @@ class OvnScenario(scenario.OvsScenario):
 
         return lswitches
 
+
+    @atomic.action_timer("ovn_network.of_check_port")
+    def _of_check_ports(self, lports, sandboxes, port_bind_args):
+        port_bind_args = port_bind_args or {}
+        wait_up = port_bind_args.get("wait_up", False)
+
+        sandbox_num = len(sandboxes)
+        lport_num = len(lports)
+        lport_per_sandbox = (lport_num + sandbox_num - 1) / sandbox_num
+
+        LOG.info("Checking OF lports method: %s" % self.install_method)
+        install_method = self.install_method
+  
+        j = 0
+        for i in range(0, len(lports), lport_per_sandbox):
+            lport_slice = lports[i:i+lport_per_sandbox]
+
+            sandbox = sandboxes[j]["name"]
+            farm = sandboxes[j]["farm"]
+            ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
+            ovs_vsctl.set_sandbox(sandbox, install_method)
+            ovs_vsctl.enable_batch_mode()
+
+            for lport in lport_slice:
+                port_name = lport["name"]
+
+                LOG.info("of check %s to %s on %s" % (port_name, sandbox, farm))
+
+                # check if OF rules installed correctly
+                mac_addr = self.port_mac[port_name]
+                of_check = ovs_vsctl.of_check('br-int', port_name, mac_addr)
+                if of_check is False:
+                    LOG.info("Return false" )
+                    raise exceptions.NotFoundException(message="openflow rule")
+
+            ovs_vsctl.flush()
+            j += 1
 
 
     @atomic.action_timer("ovn_network.bind_port")
