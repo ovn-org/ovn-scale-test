@@ -171,6 +171,7 @@ function start_ovn {
 
     run ovn-northd  --no-chdir --pidfile \
               -vconsole:off -vsyslog:off -vfile:info --log-file \
+              --log-file=/usr/local/var/run/openvswitch/ovn-northd.log \
               --ovnnb-db=unix:/usr/local/var/run/openvswitch/ovnnb_db.sock \
               --ovnsb-db=unix:/usr/local/var/run/openvswitch/ovnsb_db.sock
 }
