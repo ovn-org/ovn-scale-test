@@ -169,6 +169,9 @@ function start_ovs {
 function start_ovn {
     echo "Starting OVN northd"
 
+    ovn-nbctl init
+    ovn-sbctl init
+
     run ovn-northd  --no-chdir --pidfile \
               -vconsole:off -vsyslog:off -vfile:info --log-file \
               --ovnnb-db=unix:/usr/local/var/run/openvswitch/ovnnb_db.sock \
