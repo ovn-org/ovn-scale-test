@@ -7,17 +7,8 @@ set -o xtrace
 # Read variables
 source ovn-scale.conf
 
-function check_ovn_rally {
-    output_file=$1
-    count=`cat $output_file | grep total | grep 100 | wc -l`
-    if [ $count -ne 0 ]
-    then
-        echo "Rally run succeeded"
-    else
-        echo "Rally run failed"
-        exit 1
-    fi
-}
+# Library files
+source scale-lib.sh
 
 # Register the emulated sandboxes in the rally database
 SANDBOXHOSTS=$($OVNSUDO docker exec ovn-rally ls root/rally-ovn/workload/ | grep create-sandbox-)
@@ -27,7 +18,7 @@ for sand in $SANDBOXHOSTS ; do
     TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
     $OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create-sandbox-output.html
     $OVNSUDO docker cp ovn-rally:/root/create-sandbox-output.html .
-    #$OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
+    $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 done
 
 # Run tests
