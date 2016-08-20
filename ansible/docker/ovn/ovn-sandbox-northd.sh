@@ -164,6 +164,9 @@ function start_ovs {
     ovs-vsctl --db=unix:/usr/local/var/run/openvswitch/ovnsb_db.sock --no-wait \
         -- set open_vswitch .  manager_options=@uuid \
         -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
+    ovs-vsctl --db=unix:/usr/local/var/run/openvswitch/ovnnb_db.sock --no-wait \
+        -- set open_vswitch .  manager_options=@uuid \
+        -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
 }
 
 function start_ovn {
