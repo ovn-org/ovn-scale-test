@@ -93,10 +93,18 @@ else
         echo "LogLevel=ERROR" >> /root/.ssh/config
     fi
 fi
+# Determine local ip of this system.
+# First, try eth0. Then, try bond0. Lastly, use the address
+# of the interface that is used by the default route.
 LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
 if [ "$LOCALIP" == "" ] ; then
     # Try bond0
     LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+fi
+if [ "$LOCALIP" == "" ] ; then
+    # Try to use interface used in default route
+    PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -oP "(?<=dev )[^\s]*(?=\s)")
+    LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -oP "(?<=inet ).*(?=/)")
 fi
 LRT=$(grep "Match host $LOCALIP" /etc/ssh/sshd_config)
 if [ "$LRT" == "" ] ; then
