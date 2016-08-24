@@ -106,6 +106,9 @@ if [ "$LOCALIP" == "" ] ; then
     PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -oP "(?<=dev )[^\s]*(?=\s)")
     LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -oP "(?<=inet ).*(?=/)")
 fi
+# add new line to the end of /etc/ssh/sshd_config, if needed.
+# Failure to do so will cause config to smudge that line
+[[ $(tail -c1 /etc/ssh/sshd_config | wc -l) == 1 ]] || echo >> /etc/ssh/sshd_config
 LRT=$(grep "Match host $LOCALIP" /etc/ssh/sshd_config)
 if [ "$LRT" == "" ] ; then
     echo "Match host $LOCALIP" >> /etc/ssh/sshd_config
