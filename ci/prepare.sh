@@ -14,7 +14,7 @@ sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58
 
 if [ "$INSTALLDOCKER" == "True" ] ; then
     if [ ! -f /etc/apt/sources.list.d/docker.list ] ; then
-        sudo su -c 'echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" > /etc/apt/sources.list.d/docker.list' 
+        sudo su -c 'echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" > /etc/apt/sources.list.d/docker.list'
         sudo apt-get update -y
         sudo apt-get purge -y lxc-docker
         sudo apt-get install -y apparmor
@@ -72,6 +72,14 @@ if [ "$LOCALIP" == "" ] ; then
     LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
 fi
 cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
+
+# Create ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml if needed
+if [ ! -f ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml ] ; then
+    # Locate first match for "rally" in site.yml, and print all lines that precede it.
+    # Also, trim off matched line and the line above it (in OSX, use ghead)
+    grep --before-context 666 --max-count 1 rally ${OVN_SCALE_TOP}/ansible/site.yml | \
+        head --lines -2 > ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml
+fi
 
 # Allow root ssh logins from the local IP and docker subnet
 sudo su -m root <<'EOF'
