@@ -156,6 +156,7 @@ function start_ovs {
 
     touch "$sandbox"/.conf-sb.db.~lock~
 
+    rm -f conf-sb.db
     run ovsdb-tool create conf-sb.db "$schema"
 
     touch "$sandbox"/.ovnsb.db.~lock~

@@ -629,11 +629,13 @@ function start_ovs {
 
             touch "$sandbox"/.conf-nb.db.~lock~
             touch "$sandbox"/.conf-sb.db.~lock~
+            rm -f conf-nb.db conf-sb.db
             run ovsdb-tool create conf-nb.db "$schema"
             run ovsdb-tool create conf-sb.db "$schema"
 
             touch "$sandbox"/.ovnsb.db.~lock~
             touch "$sandbox"/.ovnnb.db.~lock~
+            rm -f ovnsb.db ovnnb.db
             run ovsdb-tool create ovnsb.db "$ovnsb_schema"
             run ovsdb-tool create ovnnb.db "$ovnnb_schema"
 
@@ -676,6 +678,7 @@ EOF
         fi
     else
         touch "$sandbox"/.conf.db.~lock~
+        rm -f conf.db
         run ovsdb-tool create conf.db "$schema"
 
         run_service ovsdb-server ovsdb-server --detach --no-chdir --pidfile \
