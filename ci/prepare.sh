@@ -65,14 +65,6 @@ sudo apt-get remove -y ansible
 sudo pip install ansible==2.0.2.0
 sudo pip install --upgrade setuptools
 
-# Prepate the docker-ovn-hosts file
-LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
-if [ "$LOCALIP" == "" ] ; then
-    # Try bond0
-    LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
-fi
-cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
-
 # Create ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml if needed
 if [ ! -f ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml ] ; then
     # Locate first match for "rally" in site.yml, and print all lines that precede it.
@@ -114,6 +106,8 @@ if [ "$LOCALIP" == "" ] ; then
     PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -oP "(?<=dev )[^\s]*(?=\s)")
     LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -oP "(?<=inet ).*(?=/)")
 fi
+# Prepare the docker-ovn-hosts file
+cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
 # add new line to the end of /etc/ssh/sshd_config, if needed.
 # Failure to do so will cause config to smudge that line
 [[ $(tail -c1 /etc/ssh/sshd_config | wc -l) == 1 ]] || echo >> /etc/ssh/sshd_config
