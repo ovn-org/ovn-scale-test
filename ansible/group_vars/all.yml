@@ -5,6 +5,9 @@ container_config_directory: "/var/lib/ovn-scale-test/config_files"
 
 deploy_user: "rally"
 
+# Deploy rally or not
+enable_rally_ovs: "yes"
+
 ###################
 # Docker options
 ###################

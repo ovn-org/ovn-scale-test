@@ -23,7 +23,7 @@ $OVNSUDO docker images
 
 # Deploy the containers
 pushd $OVN_SCALE_TOP
-$OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site.yml -e @$OVN_DOCKER_VARS \
+$OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site-ovn-only.yml -e @$OVN_DOCKER_VARS  -e enable_rally_ovs="no" \
      --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" --extra-vars "configflags=$CONFIG_FLAGS" -e action=deploy
 if [ "$?" != "0" ] ; then
     echo "Deploying failed, exiting"
@@ -36,9 +36,6 @@ check_container_failure
 
 # TODO(mestery): Verifying everything is connected
 $OVNSUDO docker exec ovn-south-database ovn-sbctl show
-
-# Create the rally deployment
-$OVNSUDO docker exec ovn-rally rally-ovs deployment create --file /root/rally-ovn/ovn-multihost-deployment.json --name ovn-multihost
 
 # Restore xtrace
 $XTRACE

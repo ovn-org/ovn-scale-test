@@ -9,5 +9,6 @@
 - hosts:
     - rally
   roles:
-    - common
-    - rally
+    - { role: common }
+    - { role: rally,
+        when: enable_rally_ovs | bool }
