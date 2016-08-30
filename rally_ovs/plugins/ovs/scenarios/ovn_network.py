@@ -25,6 +25,7 @@ class LogicalNetwork():
     def __init__(self):
         self.sandboxes = []
         self.ports_per_network = 0
+        self.lswitch = None
 
     def set_lswitch(self, lswitch):
         self.lswitch = lswitch
@@ -96,8 +97,6 @@ def allocate_networks_on_sandboxes(logical_networks, sandboxes, networks_per_san
             for j in range(base, base + networks_per_group):
                 network_group.append(logical_networks[j])
                 LOG.info("\t%d, add logical network: %s" % (j, logical_networks[j].get_lswitch()))
-
-            LOG.info("network group idx0: %s" % network_group[0].get_lswitch())
 
             network_groups.append(network_group)
             base += networks_per_group

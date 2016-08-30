@@ -21,8 +21,8 @@ Binding Configuration
 Use ``networks_per_sandbox`` to control how logical networks and the logical
 ports are bind to chassis.
 
-For example, given ``ovn_number_chassis: 10`` (4 emulated chassis) and
-``ovn_number_chassis: 10`` (10 logical networks), the binding varies depending
+For example, given ``ovn_number_chassis: 10`` (10 emulated chassis) and
+``network_number: 10`` (10 logical networks), the binding varies depending
 on the value of ``networks_per_sandbox``.
 
 - ``networks_per_sandbox: "10"``: this is the default case. All networks will
