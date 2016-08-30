@@ -56,3 +56,5 @@ ci/ansible/docker-ovn-hosts
 # The generated HTML files
 ci/*.html
 ci/*.json
+
+ansible/site-ovn-only.yml
