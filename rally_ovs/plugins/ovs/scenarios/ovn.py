@@ -231,6 +231,7 @@ class OvnScenario(scenario.OvsScenario):
     def _create_networks(self, network_create_args):
         physnet = network_create_args.get("physical_network", None)
         lswitches = self._create_lswitches(network_create_args)
+        batch = network_create_args.get("batch", len(lswitches))
 
         LOG.info("Create network method: %s" % self.install_method)
         if physnet != None:
@@ -238,6 +239,7 @@ class OvnScenario(scenario.OvsScenario):
             ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
             ovn_nbctl.enable_batch_mode()
 
+            flush_count = batch
             for lswitch in lswitches:
                 network = lswitch["name"]
                 port = "provnet-%s" % network
@@ -245,6 +247,11 @@ class OvnScenario(scenario.OvsScenario):
                 ovn_nbctl.lport_set_addresses(port, ["unknown"])
                 ovn_nbctl.lport_set_type(port, "localnet")
                 ovn_nbctl.lport_set_options(port, "network_name=%s" % physnet)
+
+                flush_count -= 1
+                if flush_count < 1:
+                    ovn_nbctl.flush()
+                    flush_count = batch
 
             ovn_nbctl.flush()
 
