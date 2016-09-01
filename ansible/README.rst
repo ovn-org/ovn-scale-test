@@ -27,15 +27,20 @@ Host machine requirements
 
 The recommended emulation target requirements:
 
-- 1 deploy node to run ansible and Rally workload
+- 1 deploy node to run ansible deployment script
 - 1 OVN database node
-- 2 OVN chassis host to run emulated OVN chassis container
+- 2 hosts to run emulated OVN chassis container
 - 1 host to run rally container (could be the same as the OVN database node)
 
 .. image:: ovn-emulation-deployment.png
    :alt: OVN emulation deployment
 
-  
+
+.. note:: The above setting is just an example. For example, all OVN emulated
+   chassis could be run on one host. For example, an all-in-one configuration
+   deploys all containers on a single host.
+
+
 Installing Dependencies
 -----------------------
 
@@ -45,6 +50,13 @@ installed. The following python package are required on all the nodes as well.
 ::
 
     pip install -U docker-py netaddr
+
+
+.. note:: If you are a first time user, please run all the following commands as
+   ``root`` user literally, not sudo and set ``deploy_user: "root"`` in
+   ``ansible/group_vars/all.yml``. As getting familiar with the framework,
+   variable ``deploy_user`` can be configured.
+
 
 Building OVN test Container Images
 ----------------------------------
@@ -59,10 +71,10 @@ To build containers, type
 These commands build two container images: ovn-scale-test-ovn and
 ovn-scale-test-rally.
 
-If you do not like the name, you can edit ansible/docker/Makefile to change the
-image name.
+If you do not like the name, you can edit ``ansible/docker/ovn/Makefile`` or
+``ansible/docker/rally/Makefile`` to change the image name.
 
-Alternatively, there is a pre-built image in docker hub. To use it, run
+Alternatively, there are pre-built images in docker hub. To use it, run
 
 ::
 
@@ -71,6 +83,28 @@ Alternatively, there is a pre-built image in docker hub. To use it, run
 
 The remaining of this guide uses OVN-SCALE-TEST as the image name. You need to
 change the name in your deployment.
+
+
+Build upstream OVS/OVN images
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The pre-built images stored on Dockerhub may not include the latest OVS commit.
+To test latest OVS/OVN, the following steps need to be run
+
+1. Edit ``ansible/docker/ovn/Makefile`` and run ``make`` to rebuild the image.
+   In ``ansible/docker/ovn/Makefile``, the variable ``image_name`` should be set
+   appropriately, e.g.,
+
+::
+
+   image_name={my_dockerhub_username}/ovn-scale-test-ovn
+
+2. Edit ansible variable file, e.g., ``ansible/group_vars/all.yml`` to use the
+   images built in above step.
+
+::
+
+   ovn_db_image: "{my_dockerhub_username}/ovn-scale-test-ovn"
+   ovn_chassis_image: "{my_dockerhub_username}/ovn-scale-test-ovn"
 
 
 Setup the emulation environment
@@ -179,7 +213,7 @@ To verify the deployment, in the ovn-rally container, type
    rally-ovs deployment config
 
 
-Register emulated sandboxes in the rally database
+Register emulated chassis in the rally database
 
 ::
 
@@ -187,11 +221,11 @@ Register emulated sandboxes in the rally database
 
 NOTE: The name of the file above includes the hostname of the host itself.
 
-Create sandboxes on multiple farm nodes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create emulated chassis on multiple hosts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the ansible inventory file, there could be multiple hosts in the
-emulation-host section, e.g.,
+emulation-hosts section, e.g.,
 
 ::
 
@@ -199,20 +233,20 @@ emulation-host section, e.g.,
    9.47.161.24    provider_ip=9.47.161.24
    9.47.161.53    provider_ip=9.47.161.53
 
-In this case, OVN sandboxes will be evenly distributed on these emulation hosts.
-That is given "ovn_number_chassis: 200", each host will run 100 emulated
+In this example, OVN sandboxes will be evenly distributed on these emulation
+hosts. That is given "ovn_number_chassis: 200", each host will run 100 emulated
 hypervisors.
 
-In addition, to register the hosts and sandboxes in the rally-ovs database, the
-create-sandbox task should be executed for individual farm nodes. Thanks to
-ansible and jinja2, the create-sandbox will be automatically generated. As in
-the above case, the following commands must be run in the **ovn-rally**
-container.
+In addition, to register the hosts and emulated chassis in the rally-ovs
+database, the create-sandbox task should be executed for individual hosts.
+Thanks to ansible and jinja2, the create-sandbox will be automatically
+generated. As in the above case, the following commands must be run in the
+**ovn-rally** container.
 
 ::
 
-   rally-ovs task start /root/rally-ovn/workload/create_sandbox-farm-node-1.json
-   rally-ovs task start /root/rally-ovn/workload/create_sandbox-farm-node-2.json
+   rally-ovs task start /root/rally-ovn/workload/create_sandbox-${HOSTNAME-1}.json
+   rally-ovs task start /root/rally-ovn/workload/create_sandbox-${HOSTNAME-2}.json
 
 
 Running Rally Workloads
