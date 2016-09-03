@@ -31,6 +31,22 @@ if [ "$INSTALLDOCKER" == "True" ] ; then
     fi
 fi
 
+# Determine local ip of this system.
+# First, try eth0. Then, try bond0. Lastly, use the address
+# of the interface that is used by the default route.
+LOCALIP=$(ip addr show dev eth0 | grep -m 1 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+if [ "$LOCALIP" == "" ] ; then
+    # Try bond0
+    LOCALIP=$(ip addr show dev bond0 | grep -m 1 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+fi
+if [ "$LOCALIP" == "" ] ; then
+    # Try to use interface used in default route
+    PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -m 1 -oP "(?<=dev )[^\s]*(?=\s)")
+    LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -m 1 -oP "(?<=inet ).*(?=/)")
+fi
+# Prepare the docker-ovn-hosts file
+cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
+
 # Setup ssh
 if [ ! -f ~/.ssh/id_rsa.pub ] ; then
     ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''
@@ -84,6 +100,24 @@ if [ ! -f ${OVN_SCALE_TOP}/ansible/site-ovn-only.yml ] ; then
 fi
 
 # Allow root ssh logins from the local IP and docker subnet
+if [ ! -f ~/.ssh/config ] ; then
+    echo "UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+    echo "StrictHostKeyChecking=no" >> ~/.ssh/config
+    echo "LogLevel=ERROR" >> ~/.ssh/config
+else
+    UKHS=$(grep UserKnownHostsFile ~/.ssh/config)
+    if [ "$UKHS" == "" ] ; then
+        echo "UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+    fi
+    SHKC=$(grep StrictHostKeyChecking ~/.ssh/config)
+    if [ "$SHKC" == "" ] ; then
+        echo "StrictHostKeyChecking=no" >> ~/.ssh/config
+    fi
+    LL=$(grep LogLevel ~/.ssh/config)
+    if [ "$LL" == "" ] ; then
+        echo "LogLevel=ERROR" >> ~/.ssh/config
+    fi
+fi
 $OVNSUDO su -m root <<'EOF'
 if [ ! -f /root/.ssh/config ] ; then
     echo "UserKnownHostsFile=/dev/null" >> /root/.ssh/config
@@ -106,18 +140,16 @@ fi
 # Determine local ip of this system.
 # First, try eth0. Then, try bond0. Lastly, use the address
 # of the interface that is used by the default route.
-LOCALIP=$(ip addr show dev eth0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+LOCALIP=$(ip addr show dev eth0 | grep -m 1 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
 if [ "$LOCALIP" == "" ] ; then
     # Try bond0
-    LOCALIP=$(ip addr show dev bond0 | grep 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
+    LOCALIP=$(ip addr show dev bond0 | grep -m 1 'inet ' | cut -d " " -f 6 | cut -d "/" -f 1)
 fi
 if [ "$LOCALIP" == "" ] ; then
     # Try to use interface used in default route
-    PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -oP "(?<=dev )[^\s]*(?=\s)")
-    LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -oP "(?<=inet ).*(?=/)")
+    PHYS_DEV=$(ip route list match 0.0.0.0/0 | grep -m 1 -oP "(?<=dev )[^\s]*(?=\s)")
+    LOCALIP=$(ip -4 addr show $PHYS_DEV | grep -m 1 -oP "(?<=inet ).*(?=/)")
 fi
-# Prepare the docker-ovn-hosts file
-cat ansible/docker-ovn-hosts-example | sed -e "s/REPLACE_IP/$LOCALIP/g" > ansible/docker-ovn-hosts
 # add new line to the end of /etc/ssh/sshd_config, if needed.
 # Failure to do so will cause config to smudge that line
 [[ $(tail -c1 /etc/ssh/sshd_config | wc -l) == 1 ]] || echo >> /etc/ssh/sshd_config
@@ -132,6 +164,7 @@ if [ "$LDT" == "" ] ; then
     echo "    PermitRootLogin without-password" >> /etc/ssh/sshd_config
 fi
 EOF
+
 $OVNSUDO /etc/init.d/ssh restart
 
 if [ "$INSTALLDOCKER" == "True" ] ; then
