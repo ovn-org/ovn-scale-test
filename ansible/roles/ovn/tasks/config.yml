@@ -53,5 +53,9 @@
   when: deploy_user != 'root'
 
 - name: Change ownership for authorized keys
-  command: "chown -R {{ deploy_user }} /home/{{ deploy_user }}/.ssh"
+  file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: "directory"
+    recurse: yes
+    owner: "{{ deploy_user }}"
   when: deploy_user != 'root'
