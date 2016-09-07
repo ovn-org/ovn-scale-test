@@ -25,7 +25,7 @@ set -o xtrace
 ./scale-hosts.sh $OVS_REPO $OVS_BRANCH $CONFIG_FLAGS || FAILED=$(( $FAILED + 1 ))
 
 # Run the testsuite
-./scale-test.sh
+./scale-test.sh || FAILED=$(( $FAILED + 1 ))
 
 # Clean things up
 ./scale-cleanup.sh || FAILED=$(( $FAILED + 1 ))
