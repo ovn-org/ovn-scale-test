@@ -17,7 +17,7 @@ CONFIG_FLAGS=$3
 # Build the docker containers
 pushd $OVN_SCALE_TOP
 cd ansible/docker
-make ovsrepo=$OVS_REPO ovsbranch=$OVS_BRANCH configflags=$CONFIG_FLAGS
+NO_RALLY=yes make ovsrepo=$OVS_REPO ovsbranch=$OVS_BRANCH configflags=$CONFIG_FLAGS
 popd
 $OVNSUDO docker images
 
