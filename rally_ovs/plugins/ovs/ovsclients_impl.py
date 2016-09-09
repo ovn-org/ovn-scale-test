@@ -175,6 +175,17 @@ class OvnNbctl(OvsClient):
 
             return get_lswitch_info(output)
 
+        def sync(self, wait='hv'):
+            # sync command should always be flushed
+            opts = ["--wait=%s" % wait]
+            batch_mode = self.batch_mode
+            if batch_mode:
+                self.flush()
+                self.batch_mode = False
+
+            self.run("sync", opts)
+            self.batch_mode = batch_mode
+
     def create_client(self):
         print "*********   call OvnNbctl.create_client"
 
