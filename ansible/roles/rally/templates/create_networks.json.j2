@@ -11,7 +11,8 @@
                 "network_create_args": {
                     "amount": {{ network_number }},
                     "start_cidr": "{{ network_start_cidr }}",
-                    "physical_network": "providernet"
+                    "physical_network": "providernet",
+                    "batch": {{ networks_created_batch_size }}
                 }
             },
             "runner": {"type": "serial", "times": 1},
