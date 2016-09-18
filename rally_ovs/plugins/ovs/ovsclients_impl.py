@@ -90,6 +90,24 @@ class OvnNbctl(OvsClient):
             self.cmds = None
 
 
+        def db_set(self, table, record, *col_values):
+            args = [table, record]
+            args += set_colval_args(*col_values)
+            self.run("set", args=args)
+
+
+        def lrouter_port_add(self, lrouter, name, mac=None, ip_addr=None):
+            params =[lrouter, name, mac, ip_addr]
+            self.run("lrp-add", args=params)
+            return {"name":name}
+
+
+        def lrouter_add(self, name):
+            params = [name]
+            self.run("lr-add", args=params)
+            return {"name":name}
+
+
         def lswitch_add(self, name):
             params = [name]
 
@@ -107,7 +125,7 @@ class OvnNbctl(OvsClient):
         def lswitch_list(self):
             self.run("ls-list")
 
-        def lport_add(self, lswitch, name):
+        def lswitch_port_add(self, lswitch, name):
             params =[lswitch, name]
             self.run("lsp-add", args=params)
 

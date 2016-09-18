@@ -1,0 +1,32 @@
+{
+    "version": 2,
+    "title": "Create OVN logical routers",
+    "subtasks": [{
+        "title": "Create OVN logical routers",
+        "workloads": [{
+            "name": "OvnNetwork.create_routers",
+            "args": {
+                "router_create_args": {
+                    "amount": {{ router_number }},
+                    "batch": {{ routers_create_batch_size }},
+                },
+                "router_connection_method": {{ router_connection_method }},
+                "networks_per_router": {{ networks_per_router }},
+                "network_create_args": {
+                    "amount": {{ network_number }},
+                    "batch": {{ networks_created_batch_size }},
+                    "start_cidr": "{{ network_start_cidr }}",
+                    "physical_network": "providernet"
+                }
+            },
+            "runner": {
+                "type": "serial","times": 1},
+            "context": {
+               "ovn_multihost" : {
+                    "controller": "ovn-controller-node"
+                },
+                "sandbox":{ "tag": "ToR1"}
+            }
+        }]
+    }]
+}

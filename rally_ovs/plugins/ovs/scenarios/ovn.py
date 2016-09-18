@@ -34,13 +34,16 @@ class OvnScenario(scenario.OvsScenario):
     return: [{"name": "lswitch_xxxx_xxxxx", "cidr": netaddr.IPNetwork}, ...]
     '''
     @atomic.action_timer("ovn.create_lswitch")
-    def _create_lswitches(self, lswitch_create_args):
+    def _create_lswitches(self, lswitch_create_args, num_switches=-1):
 
         print("create lswitch")
         self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
 
-        amount = lswitch_create_args.get("amount", 1)
-        batch = lswitch_create_args.get("batch", amount)
+
+        if (num_switches == -1):
+            num_switches = lswitch_create_args.get("amount", 1)
+        batch = lswitch_create_args.get("batch", num_switches)
+
         start_cidr = lswitch_create_args.get("start_cidr", "")
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
@@ -52,7 +55,7 @@ class OvnScenario(scenario.OvsScenario):
 
         flush_count = batch
         lswitches = []
-        for i in range(amount):
+        for i in range(num_switches):
             name = self.generate_random_name()
 
             lswitch = ovn_nbctl.lswitch_add(name)
@@ -131,7 +134,7 @@ class OvnScenario(scenario.OvsScenario):
         lports = []
         for i in range(lport_amount):
             name = self.generate_random_name()
-            lport = ovn_nbctl.lport_add(lswitch["name"], name)
+            lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name)
 
             ip = str(ip_addrs.next()) if ip_addrs else ""
             mac = utils.get_random_mac(base_mac)
@@ -226,11 +229,69 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.flush()
 
 
+    @atomic.action_timer("ovn_network.create_routers")
+    def _create_routers(self, router_create_args):
+        LOG.info("Create Logical routers")
+        self.RESOURCE_NAME_FORMAT = "lrouter_XXXXXX_XXXXXX"
 
+        amount = router_create_args.get("amount", 1)
+        batch = router_create_args.get("batch", 1)
+
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.enable_batch_mode()
+
+        flush_count = batch
+        lrouters = []
+
+        for i in range(amount):
+            name = self.generate_random_name()
+            lrouter = ovn_nbctl.lrouter_add(name)
+            lrouters.append(lrouter)
+
+            flush_count -= 1
+            if flush_count < 1:
+                ovn_nbctl.flush()
+                flush_count = batch
+
+        ovn_nbctl.flush() # ensure all commands be run
+        ovn_nbctl.enable_batch_mode(False)
+
+        return lrouters
+
+
+    def _connect_network_to_router(self, router, network):
+        LOG.info("Connect network %s to router %s" % (network["name"], router["name"]))
+
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        install_method = self.install_method
+        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.enable_batch_mode(False)
+
+
+        base_mac = [i[:2] for i in self.task["uuid"].split('-')]
+        base_mac[0] = str(hex(int(base_mac[0], 16) & 254))
+        base_mac[3:] = ['00']*3
+        mac = utils.get_random_mac(base_mac)
+
+        lrouter_port = ovn_nbctl.lrouter_port_add(router["name"], network["name"], mac,
+                                                  str(network["cidr"]))
+        ovn_nbctl.flush()
+  
+
+        switch_router_port = "rp-" + network["name"]
+        lport = ovn_nbctl.lswitch_port_add(network["name"], switch_router_port)
+        ovn_nbctl.db_set('Logical_Switch_Port', switch_router_port,
+                         ('options', {"router_port":network["name"]}),
+                         ('type', 'router'),
+                         ('address', "\\"+"\""+mac+"\\"+"\""))
+        ovn_nbctl.flush()
+  
+    # NOTE(huikang): num_networks overides the "amount" in network_create_args
     @atomic.action_timer("ovn_network.create_network")
-    def _create_networks(self, network_create_args):
+    def _create_networks(self, network_create_args, num_networks=-1):
         physnet = network_create_args.get("physical_network", None)
-        lswitches = self._create_lswitches(network_create_args)
+        lswitches = self._create_lswitches(network_create_args, num_networks)
         batch = network_create_args.get("batch", len(lswitches))
 
         LOG.info("Create network method: %s" % self.install_method)
@@ -243,7 +304,7 @@ class OvnScenario(scenario.OvsScenario):
             for lswitch in lswitches:
                 network = lswitch["name"]
                 port = "provnet-%s" % network
-                ovn_nbctl.lport_add(network, port)
+                ovn_nbctl.lswitch_port_add(network, port)
                 ovn_nbctl.lport_set_addresses(port, ["unknown"])
                 ovn_nbctl.lport_set_type(port, "localnet")
                 ovn_nbctl.lport_set_options(port, "network_name=%s" % physnet)
