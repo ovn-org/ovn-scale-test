@@ -294,6 +294,13 @@ in the rally container.
    rally-ovs task start /root/rally-ovn/workload/create_and_list_acls.json
 
 
+- Create routers
+
+::
+
+   rally-ovs task start /root/rally-ovn/workload/create_routers.json
+
+
 To clean up the emulation environment, run
 
 ::

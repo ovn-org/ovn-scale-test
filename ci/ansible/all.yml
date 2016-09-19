@@ -41,6 +41,13 @@ ports_created_batch_size: "1"
 networks_created_batch_size: "1"
 acls_per_port: "5"
 
+router_number: "1"
+routers_create_batch_size: "1"
+networks_per_router: "2"
+# Valid options are [ none, join, chain ]
+router_connection_method: "none"
+
+
 ################
 # OVS Repository
 ################
