@@ -44,16 +44,35 @@ class OvnNetwork(ovn.OvnScenario):
 
 
         # Connect network to routers
-        j = 0
-        for i in range(len(lrouters)):
-            lrouter = lrouters[i]
-            LOG.info("Connect %s networks to router %s" % (networks_per_router, lrouter["name"]))
-            for k in range(j, j+int(networks_per_router)):
-                lnetwork = lnetworks[k]
-                LOG.info("connect networks %s cidr %s" % (lnetwork["name"], lnetwork["cidr"]))
-                self._connect_network_to_router(lrouter, lnetwork)
+        self._connect_networks_to_routers(lnetworks, lrouters, networks_per_router)
 
-            j += int(networks_per_router)
+    @validation.number("ports_per_network", minval=1, integer_only=True)
+    @scenario.configure(context={})
+    def create_routers_bind_ports(self, router_create_args=None,
+                                  router_connection_method=None,
+                                  networks_per_router=None,
+                                  network_create_args=None,
+                                  port_create_args=None,
+                                  ports_per_network=None,
+                                  port_bind_args=None):
+
+        # Create routers and logical networks, and connect them
+        lrouters = self._create_routers(router_create_args)
+
+        num_router = int(router_create_args.get("amount", 0))
+        num_networks = int(networks_per_router) * num_router
+        lnetworks = self._create_networks(network_create_args, num_networks)
+
+        self._connect_networks_to_routers(lnetworks, lrouters, networks_per_router)
+
+        # Create ports on the logical networks
+        sandboxes = self.context["sandboxes"]
+
+        for network in lnetworks:
+            lports = self._create_lports(network, port_create_args, ports_per_network)
+            if (len(lports) < len(sandboxes)):
+                LOG.warn("Number of ports less than chassis: inbalance binding\n")
+            self._bind_ports(lports, sandboxes, port_bind_args)
 
 
     @validation.number("ports_per_network", minval=1, integer_only=True)
