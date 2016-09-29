@@ -72,6 +72,16 @@ $OVNSUDO docker cp ovn-rally:/root/create-routers-output.html .
 $OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
 $OVNSUDO rm -rf /tmp/rally-ovs-output.raw
 
+$OVNSUDO docker exec ovn-rally rally-ovs task start /root/rally-ovn/workload/create_routers_bind_ports.json 2>&1 | tee /tmp/rally-ovs-output.raw
+check_ovn_rally /tmp/rally-ovs-output.raw
+TASKID=$($OVNSUDO docker exec ovn-rally rally task list --uuids-only)
+# NOTE(mestery): HTML and JSON data are collected differently, look to consolidate
+$OVNSUDO docker exec ovn-rally rally task report $TASKID --out /root/create_routers_bind_ports-output.html
+$OVNSUDO docker exec ovn-rally rally task results $TASKID > ./create_routers_bind_ports-data.json
+$OVNSUDO docker cp ovn-rally:/root/create_routers_bind_ports-output.html .
+$OVNSUDO docker exec ovn-rally rally task delete --uuid $TASKID
+$OVNSUDO rm -rf /tmp/rally-ovs-output.raw
+
 $OVNSUDO docker ps
 
 # Restore xtrace

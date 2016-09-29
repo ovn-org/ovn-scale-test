@@ -286,6 +286,19 @@ class OvnScenario(scenario.OvsScenario):
                          ('type', 'router'),
                          ('address', "\\"+"\""+mac+"\\"+"\""))
         ovn_nbctl.flush()
+
+    def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
+        j = 0
+        for i in range(len(lrouters)):
+            lrouter = lrouters[i]
+            LOG.info("Connect %s networks to router %s" % (networks_per_router, lrouter["name"]))
+            for k in range(j, j+int(networks_per_router)):
+                lnetwork = lnetworks[k]
+                LOG.info("connect networks %s cidr %s" % (lnetwork["name"], lnetwork["cidr"]))
+                self._connect_network_to_router(lrouter, lnetwork)
+
+            j += int(networks_per_router)
+
   
     # NOTE(huikang): num_networks overides the "amount" in network_create_args
     @atomic.action_timer("ovn_network.create_network")

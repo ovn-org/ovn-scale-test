@@ -52,6 +52,7 @@
     - "create_networks"
     - "create_and_list_acls"
     - "create_routers"
+    - "create_routers_bind_ports"
 
 - name: Copying over create-sandbox file on farm node
   template:
