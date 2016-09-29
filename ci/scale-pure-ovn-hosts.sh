@@ -22,9 +22,14 @@ popd
 $OVNSUDO docker images
 
 # Deploy the containers
+# TODO(flaviof): When deploy is hooked into a CI system to test a specific OVS commit sha,
+# we will need to add support for passing in the OVS_REPO, OVS_BRANCH, and CONFIG_FLAGS
+# variables. Till then, let's keep it out to avoid potential confusion.
 pushd $OVN_SCALE_TOP
-$OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site-ovn-only.yml -e @$OVN_DOCKER_VARS  -e enable_rally_ovs="no" \
-     --extra-vars "ovs_repo=$OVS_REPO" --extra-vars "ovs_branch=$OVS_BRANCH" --extra-vars "configflags=$CONFIG_FLAGS" -e action=deploy
+$OVNSUDO /usr/local/bin/ansible-playbook -i $OVN_DOCKER_HOSTS ansible/site-ovn-only.yml \
+     -e @$OVN_DOCKER_VARS \
+     -e enable_rally_ovs="no" \
+     -e action=deploy
 if [ "$?" != "0" ] ; then
     echo "Deploying failed, exiting"
     exit 1
