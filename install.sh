@@ -34,7 +34,7 @@ PYTHON=${PYTHON2:-$PYTHON3}
 BASE_PIP_URL=${BASE_PIP_URL:-"https://pypi.python.org/simple"}
 VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
 
-OVN_SCALE_TEST_GIT_URL="https://github.com/l8huang/rally-ovs.git"
+OVN_SCALE_TEST_GIT_URL="https://github.com/l8huang/rally.git"
 OVN_SCALE_TEST_GIT_BRANCH="master"
 RALLY_CONFIGURATION_DIR=/etc/rally
 
