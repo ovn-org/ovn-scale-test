@@ -244,10 +244,12 @@ class OvsVsctl(OvsClient):
             if self.sandbox and self.batch_mode == False:
                 if self.install_method == "sandbox":
                     self.cmds.append(". %s/sandbox.rc" % self.sandbox)
-                    cmd = itertools.chain(["ovs-vsctl"], opts, [cmd], args)
-                    self.cmds.append(" ".join(cmd))
                 elif self.install_method == "docker":
                     self.cmds.append("sudo docker exec %s ovs-vsctl " % self.sandbox + cmd + " " + " ".join(args))
+
+            if self.install_method != "docker"
+                cmd = itertools.chain(["ovs-vsctl"], opts, [cmd], args)
+                self.cmds.append(" ".join(cmd))
 
             if self.batch_mode:
                 return
