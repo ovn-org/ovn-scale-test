@@ -2,6 +2,9 @@
 
 set -e # exit on first error
 
+# Adjust PATH for non-interactive SSH sessions.
+export PATH=$PATH:/usr/local/sbin:/usr/sbin
+
 OVS_USER=$1
 
 echo "Prepare user $OVS_USER for ovs deployment"

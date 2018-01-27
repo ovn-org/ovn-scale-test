@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Adjust PATH for non-interactive SSH sessions.
+export PATH=$PATH:/usr/local/sbin:/usr/sbin
+
 OVS_REPO=$1
 OVS_BRANCH=$2
 OVS_USER=$3
