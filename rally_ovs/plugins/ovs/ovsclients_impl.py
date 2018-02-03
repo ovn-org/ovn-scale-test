@@ -247,7 +247,7 @@ class OvsVsctl(OvsClient):
                 elif self.install_method == "docker":
                     self.cmds.append("sudo docker exec %s ovs-vsctl " % self.sandbox + cmd + " " + " ".join(args))
 
-            if self.install_method != "docker"
+            if self.install_method != "docker":
                 cmd = itertools.chain(["ovs-vsctl"], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
 
