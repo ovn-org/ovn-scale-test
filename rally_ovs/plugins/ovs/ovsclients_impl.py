@@ -16,6 +16,7 @@ import pipes
 import sys
 import itertools
 import pipes
+from io import StringIO
 from rally_ovs.plugins.ovs.ovsclients import *
 from rally_ovs.plugins.ovs.utils import get_ssh_from_credential
 
