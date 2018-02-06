@@ -284,7 +284,7 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.db_set('Logical_Switch_Port', switch_router_port,
                          ('options', {"router_port":network["name"]}),
                          ('type', 'router'),
-                         ('address', "\\"+"\""+mac+"\\"+"\""))
+                         ('address', 'router'))
         ovn_nbctl.flush()
 
     def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
