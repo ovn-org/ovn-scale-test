@@ -277,12 +277,12 @@ class OvnScenario(scenario.OvsScenario):
         lrouter_port = ovn_nbctl.lrouter_port_add(router["name"], network["name"], mac,
                                                   str(network["cidr"]))
         ovn_nbctl.flush()
-  
+
 
         switch_router_port = "rp-" + network["name"]
         lport = ovn_nbctl.lswitch_port_add(network["name"], switch_router_port)
         ovn_nbctl.db_set('Logical_Switch_Port', switch_router_port,
-                         ('options', {"router_port":network["name"]}),
+                         ('options', {"router-port":network["name"]}),
                          ('type', 'router'),
                          ('address', 'router'))
         ovn_nbctl.flush()
@@ -299,7 +299,7 @@ class OvnScenario(scenario.OvsScenario):
 
             j += int(networks_per_router)
 
-  
+
     # NOTE(huikang): num_networks overides the "amount" in network_create_args
     @atomic.action_timer("ovn_network.create_network")
     def _create_networks(self, network_create_args, num_networks=-1):
