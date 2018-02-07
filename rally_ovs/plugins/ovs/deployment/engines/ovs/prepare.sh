@@ -7,7 +7,7 @@ OVS_USER=$1
 echo "Prepare user $OVS_USER for ovs deployment"
 
 # Check for an existing user
-_USER=$(grep $OVS_USER /etc/passwd)
+_USER=$(grep $OVS_USER /etc/passwd || true)
 if [ "$_USER" == "" ]; then
     useradd $OVS_USER -m || echo "Error adding user $OVS_USER" >&2
     mkdir -m 700 /home/$OVS_USER/.ssh || true
