@@ -16,8 +16,8 @@ from rally_ovs.plugins.ovs import scenario
 from rally.task import atomic
 from rally.common import logging
 from rally import exceptions
-from rally_ovs.plugins.ovs.utils import get_random_sandbox
 from rally_ovs.plugins.ovs import utils
+import random
 import netaddr
 
 LOG = logging.getLogger(__name__)
@@ -352,27 +352,47 @@ class OvnScenario(scenario.OvsScenario):
         LOG.info("Bind lports method: %s" % self.install_method)
         install_method = self.install_method
 
-        j = 0
-        for i in range(0, len(lports), lport_per_sandbox):
-            lport_slice = lports[i:i+lport_per_sandbox]
+        if (len(lports) < len(sandboxes)):
+            for lport in lports:
+                sandbox_data = random.choice(sandboxes)
+                farm = sandbox_data['farm']
+                sandbox = sandbox_data['name']
+                ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
 
-            sandbox = sandboxes[j]["name"]
-            farm = sandboxes[j]["farm"]
-            ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-            ovs_vsctl.set_sandbox(sandbox, install_method)
-            ovs_vsctl.enable_batch_mode()
-            for lport in lport_slice:
+                ovs_vsctl.set_sandbox(sandbox, install_method)
+                ovs_vsctl.enable_batch_mode()
                 port_name = lport["name"]
-
                 LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
 
                 ovs_vsctl.add_port('br-int', port_name)
                 ovs_vsctl.db_set('Interface', port_name,
-                                 ('external_ids', {"iface-id":port_name,
-                                                   "iface-status":"active"}),
+                                 ('external_ids', {"iface-id": port_name,
+                                                   "iface-status": "active"}),
                                  ('admin_state', 'up'))
-            ovs_vsctl.flush()
-            j += 1
+                ovs_vsctl.flush()
+
+        else:
+            j = 0
+            for i in range(0, len(lports), lport_per_sandbox):
+                lport_slice = lports[i:i+lport_per_sandbox]
+
+                sandbox = sandboxes[j]["name"]
+                farm = sandboxes[j]["farm"]
+                ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
+                ovs_vsctl.set_sandbox(sandbox, install_method)
+                ovs_vsctl.enable_batch_mode()
+                for lport in lport_slice:
+                    port_name = lport["name"]
+
+                    LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
+
+                    ovs_vsctl.add_port('br-int', port_name)
+                    ovs_vsctl.db_set('Interface', port_name,
+                                     ('external_ids', {"iface-id":port_name,
+                                                       "iface-status":"active"}),
+                                     ('admin_state', 'up'))
+                ovs_vsctl.flush()
+                j += 1
 
         if wait_up:
             self._wait_up_port(lports, wait_sync, install_method)

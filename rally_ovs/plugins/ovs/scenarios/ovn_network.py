@@ -14,7 +14,7 @@
 
 from rally.common import logging
 from rally_ovs.plugins.ovs.scenarios import ovn
-
+from rally_ovs.plugins.ovs import utils
 from rally.task import scenario
 from rally.task import validation
 
@@ -67,11 +67,15 @@ class OvnNetwork(ovn.OvnScenario):
 
         # Create ports on the logical networks
         sandboxes = self.context["sandboxes"]
+        if not sandboxes:
+            # when there is sandbox specified, we bind ports on all
+            # sandboxes randomly. Else, we bind evenly.
+            sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
 
         for network in lnetworks:
             lports = self._create_lports(network, port_create_args, ports_per_network)
             if (len(lports) < len(sandboxes)):
-                LOG.warn("Number of ports less than chassis: inbalance binding\n")
+                LOG.warn("Number of ports less than chassis: random binding\n")
             self._bind_ports(lports, sandboxes, port_bind_args)
 
 
