@@ -68,8 +68,7 @@ class OvnNetwork(ovn.OvnScenario):
         # Create ports on the logical networks
         sandboxes = self.context["sandboxes"]
         if not sandboxes:
-            # when there is sandbox specified, we bind ports on all
-            # sandboxes randomly. Else, we bind evenly.
+            # when there is no sandbox specified, bind on all sandboxes.
             sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
 
         for network in lnetworks:
