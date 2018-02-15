@@ -82,7 +82,7 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl = self.controller_client("ovn-nbctl")
         ovn_nbctl.set_sandbox("controller-sandbox")
         ovn_nbctl.enable_batch_mode(False)
-        ovn_nbctl.lswitch_list()
+        return ovn_nbctl.lswitch_list()
 
     @atomic.action_timer("ovn.delete_lswitch")
     def _delete_lswitch(self, lswitches):

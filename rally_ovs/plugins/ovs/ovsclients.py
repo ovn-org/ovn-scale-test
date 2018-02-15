@@ -101,6 +101,11 @@ def get_lswitch_info(info):
 
     return lswitches
 
+def parse_lswitch_list(lswitch_data):
+    lswitches = []
+    for line in lswitch_data.splitlines():
+        lswitches.append({"name": line.split(" ")[1].strip('()')})
+    return lswitches
 
 def set_colval_args(*col_values):
     args = []
