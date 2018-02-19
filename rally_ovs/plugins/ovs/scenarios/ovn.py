@@ -166,7 +166,7 @@ class OvnScenario(scenario.OvsScenario):
         ovn_nbctl.flush()
 
 
-    @atomic.action_timer("ovn.action_timer")
+    @atomic.action_timer("ovn.list_lports")
     def _list_lports(self, lswitches, install_method = "sandbox"):
         print("list lports")
         ovn_nbctl = self.controller_client("ovn-nbctl")
