@@ -63,7 +63,7 @@ class OvnScenario(scenario.OvsScenario):
                 lswitch["cidr"] = start_cidr.next(i)
 
             LOG.info("create %(name)s %(cidr)s" % \
-                      {"name": name, "cidr":lswitch["cidr"]})
+                      {"name": name, "cidr": lswitch.get("cidr", "")})
             lswitches.append(lswitch)
 
             flush_count -= 1
