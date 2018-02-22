@@ -91,11 +91,11 @@ def get_lswitch_info(info):
     lswitch = None
     for line in info.splitlines():
         tokens = line.strip().split(" ")
-        if tokens[0] == "lswitch":
+        if tokens[0] == "switch":
             name = tokens[2][1:-1]
             lswitch = {"name":name, "uuid":tokens[1], "lports":[]}
             lswitches.append(lswitch)
-        elif tokens[0] == "lport":
+        elif tokens[0] == "port":
             name = tokens[1][1:-1]
             lswitch["lports"].append({"name":name})
 
