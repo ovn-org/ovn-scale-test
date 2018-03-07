@@ -143,13 +143,16 @@ class OvnNbctl(OvsClient):
             self.run("lsp-del", args=params)
 
         '''
-        param address: [mac,ip], [mac] ...
+        param address: [mac], [mac,ip], [mac,ip1,ip2] ...
         '''
         def lport_set_addresses(self, name, *addresses):
             params = [name]
 
             for i in addresses:
-                params += ["\ ".join(i)]
+                i = filter(lambda x: x, i)
+                i = "\ ".join(i)
+                if i:
+                    params += [i]
 
             self.run("lsp-set-addresses", args=params)
 
