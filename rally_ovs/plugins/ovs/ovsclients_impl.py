@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import pipes
 import sys
 import itertools
 import pipes
@@ -122,9 +121,11 @@ class OvnNbctl(OvsClient):
             self.run("ls-del", args=params)
 
 
-
         def lswitch_list(self):
-            self.run("ls-list")
+            stdout = StringIO()
+            self.run("ls-list", stdout=stdout)
+            output = stdout.getvalue()
+            return parse_lswitch_list(output)
 
         def lswitch_port_add(self, lswitch, name):
             params =[lswitch, name]

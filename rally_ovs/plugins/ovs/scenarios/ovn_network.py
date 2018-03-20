@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import netaddr
 from rally.common import logging
 from rally_ovs.plugins.ovs.scenarios import ovn
 from rally_ovs.plugins.ovs import utils
@@ -88,7 +89,20 @@ class OvnNetwork(ovn.OvnScenario):
 
         sandboxes = self.context["sandboxes"]
 
-        lswitches = self._create_networks(network_create_args)
+        use_existing_networks = port_create_args. \
+            get("use_existing_networks", False)
+        if not use_existing_networks:
+            lswitches = self._create_networks(network_create_args)
+        else:
+            lswitches = self._list_lswitches()
+            num_switches = len(lswitches)
+            start_cidr = network_create_args.get("start_cidr", "")
+            if start_cidr:
+                start_cidr = netaddr.IPNetwork(start_cidr)
+                for i in range(num_switches):
+                    if start_cidr:
+                        lswitches[i]["cidr"] = start_cidr.next(i)
+
         for lswitch in lswitches:
             lports = self._create_lports(lswitch, port_create_args, ports_per_network)
             self._bind_ports(lports, sandboxes, port_bind_args)
