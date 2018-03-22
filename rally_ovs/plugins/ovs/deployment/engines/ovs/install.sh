@@ -50,7 +50,7 @@ function install_ovs {
     sudo apt-get install -y --force-yes gcc make automake autoconf \
                       libtool libcap-ng0 libssl1.0.0 python-pip \
                       libjemalloc1 libjemalloc-dev
-    sudo pip install -i http://installsvc.vip/packages/pypi/data/web/simple/  six
+    sudo pip install six
     ./boot.sh
     mkdir build
     cd build
