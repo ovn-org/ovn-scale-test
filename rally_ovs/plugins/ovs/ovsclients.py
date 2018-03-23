@@ -66,6 +66,8 @@ class Clients(object):
 
     def clear(self):
         """Remove all cached client handles."""
+        for _, client in six.iteritems(self.cache):
+            client.close()
         self.cache = {}
 
 
@@ -197,8 +199,3 @@ class DdCtlMixin(object):
         args = [table, record]
         args += set_colval_args(*col_values)
         self.run("wait-until", args=args)
-
-
-
-
-

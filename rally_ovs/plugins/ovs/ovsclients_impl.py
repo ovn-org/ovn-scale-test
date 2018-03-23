@@ -41,6 +41,11 @@ class OvnNbctl(OvsClient):
             self.batch_mode = False
             self.cmds = None
 
+
+        def close(self):
+            self.ssh.close()
+
+
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
 
@@ -231,6 +236,11 @@ class OvsVsctl(OvsClient):
             self.batch_mode = False
             self.sandbox = None
             self.cmds = None
+
+
+        def close(self):
+            self.ssh.close()
+
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
