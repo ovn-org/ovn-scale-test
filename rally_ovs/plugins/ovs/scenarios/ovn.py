@@ -299,35 +299,37 @@ class OvnScenario(scenario.OvsScenario):
 
             j += int(networks_per_router)
 
+    @atomic.action_timer("ovn_network.create_phynet")
+    def _create_phynet(self, lswitches, physnet, batch):
+        LOG.info("Create phynet method: %s" % self.install_method)
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.enable_batch_mode()
+
+        flush_count = batch
+        for lswitch in lswitches:
+            network = lswitch["name"]
+            port = "provnet-%s" % network
+            ovn_nbctl.lswitch_port_add(network, port)
+            ovn_nbctl.lport_set_addresses(port, ["unknown"])
+            ovn_nbctl.lport_set_type(port, "localnet")
+            ovn_nbctl.lport_set_options(port, "network_name=%s" % physnet)
+
+            flush_count -= 1
+            if flush_count < 1:
+                ovn_nbctl.flush()
+                flush_count = batch
+
+        ovn_nbctl.flush()
 
     # NOTE(huikang): num_networks overides the "amount" in network_create_args
-    @atomic.action_timer("ovn_network.create_network")
     def _create_networks(self, network_create_args, num_networks=-1):
         physnet = network_create_args.get("physical_network", None)
         lswitches = self._create_lswitches(network_create_args, num_networks)
         batch = network_create_args.get("batch", len(lswitches))
 
-        LOG.info("Create network method: %s" % self.install_method)
         if physnet != None:
-            ovn_nbctl = self.controller_client("ovn-nbctl")
-            ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
-            ovn_nbctl.enable_batch_mode()
-
-            flush_count = batch
-            for lswitch in lswitches:
-                network = lswitch["name"]
-                port = "provnet-%s" % network
-                ovn_nbctl.lswitch_port_add(network, port)
-                ovn_nbctl.lport_set_addresses(port, ["unknown"])
-                ovn_nbctl.lport_set_type(port, "localnet")
-                ovn_nbctl.lport_set_options(port, "network_name=%s" % physnet)
-
-                flush_count -= 1
-                if flush_count < 1:
-                    ovn_nbctl.flush()
-                    flush_count = batch
-
-            ovn_nbctl.flush()
+            self._create_phynet(lswitches, physnet, batch)
 
         return lswitches
 
