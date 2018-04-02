@@ -17,6 +17,7 @@ import collections
 import six
 
 from rally.common.plugin import plugin
+from rally.task import scenario
 from utils import py_to_val
 
 _NAMESPACE = "ovs"
@@ -66,6 +67,51 @@ class Clients(object):
         """Remove all cached client handles."""
         self.cache = {}
 
+
+class ClientsMixin(object):
+    """Mixin for objects that use OvsClient clients"""
+
+    def __init__(self, *args, **kwargs):
+        super(ClientsMixin, self).__init__(*args, **kwargs)
+
+        self._controller_clients = None
+        self._farm_clients = {}
+
+        # We are a Scenario, context has been already set up. Use it.
+        if isinstance(self, scenario.Scenario):
+            self.setup()
+
+    def setup(self):
+        multihost_info = self.context["ovn_multihost"]
+
+        for k,v in six.iteritems(multihost_info["controller"]):
+            cred = v["credential"]
+            self._controller_clients = Clients(cred)
+
+        self._farm_clients = {}
+        for k,v in six.iteritems(multihost_info["farms"]):
+            cred = v["credential"]
+            self._farm_clients[k] = Clients(cred)
+
+        self.install_method = multihost_info["install_method"]
+
+    def __del__(self):
+        self.cleanup_clients()
+
+    def controller_client(self, client_type="ssh"):
+        client = getattr(self._controller_clients, client_type)
+        return client()
+
+    def farm_clients(self, name, client_type="ssh"):
+        clients = self._farm_clients[name]
+        client = getattr(clients, client_type)
+        return client()
+
+    def cleanup_clients(self):
+        if self._controller_clients:
+            self._controller_clients.clear()
+        for _, clients in six.iteritems(self._farm_clients):
+            clients.clear()
 
 
 '''
