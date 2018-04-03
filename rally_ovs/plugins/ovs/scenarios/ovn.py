@@ -16,6 +16,7 @@ from rally_ovs.plugins.ovs import scenario
 from rally.task import atomic
 from rally.common import logging
 from rally import exceptions
+from rally_ovs.plugins.ovs import ovnclients
 from rally_ovs.plugins.ovs import utils
 import random
 import netaddr
@@ -23,10 +24,7 @@ import netaddr
 LOG = logging.getLogger(__name__)
 
 
-
-class OvnScenario(scenario.OvsScenario):
-
-
+class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
 
 
@@ -232,32 +230,7 @@ class OvnScenario(scenario.OvsScenario):
     @atomic.action_timer("ovn_network.create_routers")
     def _create_routers(self, router_create_args):
         LOG.info("Create Logical routers")
-        self.RESOURCE_NAME_FORMAT = "lrouter_XXXXXX_XXXXXX"
-
-        amount = router_create_args.get("amount", 1)
-        batch = router_create_args.get("batch", 1)
-
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
-        ovn_nbctl.enable_batch_mode()
-
-        flush_count = batch
-        lrouters = []
-
-        for i in range(amount):
-            name = self.generate_random_name()
-            lrouter = ovn_nbctl.lrouter_add(name)
-            lrouters.append(lrouter)
-
-            flush_count -= 1
-            if flush_count < 1:
-                ovn_nbctl.flush()
-                flush_count = batch
-
-        ovn_nbctl.flush() # ensure all commands be run
-        ovn_nbctl.enable_batch_mode(False)
-
-        return lrouters
+        return super(OvnScenario, self)._create_routers(router_create_args)
 
 
     def _connect_network_to_router(self, router, network):
