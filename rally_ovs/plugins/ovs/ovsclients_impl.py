@@ -292,3 +292,45 @@ class OvsVsctl(OvsClient):
         print "*********   call OvsVsctl.create_client"
         client = self._OvsVsctl(self.credential)
         return client
+
+
+
+@configure("ovs-ofctl")
+class OvsOfctl(OvsClient):
+
+    class _OvsOfctl(object):
+
+        def __init__(self, credential):
+            self.ssh = get_ssh_from_credential(credential)
+            self.context = {}
+            self.sandbox = None
+
+        def set_sandbox(self, sandbox, install_method="sandbox"):
+            self.sandbox = sandbox
+            self.install_method = install_method
+
+        def run(self, cmd, opts=[], args=[], stdout=sys.stdout, stderr=sys.stderr):
+            # TODO: add support for docker
+            cmds = []
+
+            if self.sandbox:
+                if self.install_method == "sandbox":
+                    cmds.append(". %s/sandbox.rc" % self.sandbox)
+
+            cmd = itertools.chain(["ovs-ofctl"], opts, [cmd], args)
+            cmds.append(" ".join(cmd))
+            self.ssh.run("\n".join(cmds),
+                         stdout=stdout, stderr=stderr)
+
+        def dump_flows(self, bridge):
+            stdout = StringIO()
+            opts = []
+            self.run("dump-flows", opts, [bridge], stdout=stdout)
+            oflow_data = stdout.getvalue().strip()
+            oflow_data = oflow_data.split('\n')
+            return len(oflow_data)
+
+    def create_client(self):
+        print "*********   call OvsOfctl.create_client"
+        client = self._OvsOfctl(self.credential)
+        return client
