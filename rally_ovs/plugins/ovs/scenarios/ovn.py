@@ -33,46 +33,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     '''
     @atomic.action_timer("ovn.create_lswitch")
     def _create_lswitches(self, lswitch_create_args, num_switches=-1):
-
         print("create lswitch")
-        self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
-
-
-        if (num_switches == -1):
-            num_switches = lswitch_create_args.get("amount", 1)
-        batch = lswitch_create_args.get("batch", num_switches)
-
-        start_cidr = lswitch_create_args.get("start_cidr", "")
-        if start_cidr:
-            start_cidr = netaddr.IPNetwork(start_cidr)
-
-        LOG.info("Create lswitches method: %s" % self.install_method)
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
-        ovn_nbctl.enable_batch_mode()
-
-        flush_count = batch
-        lswitches = []
-        for i in range(num_switches):
-            name = self.generate_random_name()
-
-            lswitch = ovn_nbctl.lswitch_add(name)
-            if start_cidr:
-                lswitch["cidr"] = start_cidr.next(i)
-
-            LOG.info("create %(name)s %(cidr)s" % \
-                      {"name": name, "cidr": lswitch.get("cidr", "")})
-            lswitches.append(lswitch)
-
-            flush_count -= 1
-            if flush_count < 1:
-                ovn_nbctl.flush()
-                flush_count = batch
-
-        ovn_nbctl.flush() # ensure all commands be run
-        ovn_nbctl.enable_batch_mode(False)
-        return lswitches
-
+        return super(OvnScenario, self)._create_lswitches(lswitch_create_args, num_switches)
 
     @atomic.optional_action_timer("ovn.list_lswitch")
     def _list_lswitches(self):
