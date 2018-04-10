@@ -289,6 +289,6 @@ class OvsVsctl(OvsClient):
             self.run("set", args=args)
 
     def create_client(self):
-        print "*********   call OvnNbctl.create_client"
+        print "*********   call OvsVsctl.create_client"
         client = self._OvsVsctl(self.credential)
         return client
