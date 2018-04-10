@@ -120,13 +120,10 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         ovn_nbctl.flush()
 
     def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
-        j = 0
-        for i in range(len(lrouters)):
-            lrouter = lrouters[i]
+        for lrouter in lrouters:
             LOG.info("Connect %s networks to router %s" % (networks_per_router, lrouter["name"]))
-            for k in range(j, j+int(networks_per_router)):
-                lnetwork = lnetworks[k]
+            for lnetwork in lnetworks[:networks_per_router]:
                 LOG.info("connect networks %s cidr %s" % (lnetwork["name"], lnetwork["cidr"]))
                 self._connect_network_to_router(lrouter, lnetwork)
 
-            j += int(networks_per_router)
+            lnetworks = lnetworks[networks_per_router:]
