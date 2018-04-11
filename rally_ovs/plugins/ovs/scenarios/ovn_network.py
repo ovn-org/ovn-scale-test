@@ -114,4 +114,10 @@ class OvnNetwork(ovn.OvnScenario):
     def bind_and_unbind_ports(self):
         pass
 
-
+    @scenario.configure(context={})
+    def list_oflow_count_for_sandboxes(self, sandbox_args={}):
+        sandboxes = self.context["sandboxes"]
+        if not sandboxes:
+            # when there is no sandbox specified, get all sandboxes.
+            sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
+        self._list_oflow_count_for_sandboxes(sandboxes, sandbox_args)

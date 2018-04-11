@@ -413,7 +413,26 @@ class OvnScenario(scenario.OvsScenario):
         if wait_sync != "none":
             ovn_nbctl.sync(wait_sync)
 
+    @atomic.action_timer("ovn_network.list_oflow_count_for_sandboxes")
+    def _list_oflow_count_for_sandboxes(self, sandboxes,
+                                           sandbox_args):
+        install_method = self.install_method
+        oflow_data = []
+        for sandbox in sandboxes:
+            sandbox_name = sandbox["name"]
+            farm = sandbox["farm"]
+            ovs_ofctl = self.farm_clients(farm, "ovs-ofctl")
+            ovs_ofctl.set_sandbox(sandbox_name, install_method)
+            bridge = sandbox_args.get('bridge', 'br-int')
+            lflow_count = ovs_ofctl.dump_flows(bridge)
 
+            LOG.debug('openflow count on %s is %s' % (sandbox_name, lflow_count))
+            oflow_data.append([sandbox_name, lflow_count])
 
-
-
+        # Leverage additive plot as each sandbox has just one openflow count.
+        additive_oflow_data = {
+            "title": "Openflow count on each sandbox in StackedArea",
+            "description": "Openflow count on each sandbox",
+            "chart_plugin": "StackedArea", "data": oflow_data
+        }
+        self.add_output(additive_oflow_data)
