@@ -81,6 +81,26 @@ class OvnNetwork(ovn.OvnScenario):
 
     @validation.number("ports_per_network", minval=1, integer_only=True)
     @scenario.configure(context={})
+    def create_routers_and_networks(self, router_create_args=None,
+                                  router_connection_method=None,
+                                  networks_per_router=None,
+                                  network_create_args=None,
+                                  port_create_args=None,
+                                  ports_per_network=None,
+                                  port_bind_args=None):
+
+        # Create routers and logical networks, and connect them
+        lrouters = self._create_routers(router_create_args)
+
+        num_router = int(router_create_args.get("amount", 0))
+        num_networks = int(networks_per_router) * num_router
+        lnetworks = self._create_networks(network_create_args, num_networks)
+
+        self._connect_networks_to_routers(lnetworks, lrouters, networks_per_router)
+
+
+    @validation.number("ports_per_network", minval=1, integer_only=True)
+    @scenario.configure(context={})
     def create_and_bind_ports(self,
                               network_create_args=None,
                               port_create_args=None,
