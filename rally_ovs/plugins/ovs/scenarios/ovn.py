@@ -287,6 +287,7 @@ class OvnScenario(scenario.OvsScenario):
                          ('address', 'router'))
         ovn_nbctl.flush()
 
+    @atomic.action_timer("ovn_network.connect_network_to_router")
     def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
         j = 0
         for i in range(len(lrouters)):
