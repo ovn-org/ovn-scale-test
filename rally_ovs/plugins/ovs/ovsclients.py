@@ -198,6 +198,24 @@ class DdCtlMixin(object):
         args += set_colval_args(*col_values)
         self.run("wait-until", args=args)
 
+    def create(self, table, record, *col_values):
+        args = [table, record]
+        args += set_colval_args(*col_values)
+        self.run("create", args=args)
+
+    def add(self, table, record, *col_values):
+        args = [table, record]
+        args += set_colval_args(*col_values)
+        self.run("add", args=args)
+
+    def set(self, table, record, *col_values):
+        args = [table, record]
+        args += set_colval_args(*col_values)
+        self.run("set", args=args)
+
+    def destroy(self, table, record):
+        args = [table, record]
+        self.run("destroy", args=args)
 
 
 
