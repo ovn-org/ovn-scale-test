@@ -30,7 +30,8 @@ LOG = logging.getLogger(__name__)
 class Datapath(ovnclients.OvnClientMixin, context.Context):
     """Create datapath resources.
 
-    This context creates logical routers.
+    This context creates datapath resources, like logical routers or logical
+    switches.
     """
 
     CONFIG_SCHEMA = {
@@ -45,25 +46,41 @@ class Datapath(ovnclients.OvnClientMixin, context.Context):
                 },
                 "additionalProperties": False,
             },
+            "lswitch_create_args": {
+                "type": "object",
+                "properties": {
+                    "amount": {"type": "integer", "minimum": 0},
+                    "batch": {"type": "integer", "minimum": 1},
+                    "start_cidr": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
         },
         "additionalProperties": False,
     }
 
     DEFAULT_CONFIG = {
         "router_create_args": {"amount": 0},
+        "lswitch_create_args": {"amount": 0},
     }
 
     def setup(self):
         super(Datapath, self).setup()
 
         router_create_args = self.config["router_create_args"]
+        lswitch_create_args = self.config["lswitch_create_args"]
 
         routers = []
         if router_create_args["amount"]:
             routers = self._create_routers(router_create_args)
 
+        lswitches = []
+        if lswitch_create_args["amount"]:
+            lswitches = self._create_lswitches(lswitch_create_args)
+
         self.context["datapaths"] = {
             "routers": routers,
+            "lswitches": lswitches,
         }
 
     def cleanup(self):
