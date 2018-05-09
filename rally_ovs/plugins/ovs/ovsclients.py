@@ -110,7 +110,9 @@ def parse_lswitch_list(lswitch_data):
 def set_colval_args(*col_values):
     args = []
     for entry in col_values:
-        if len(entry) == 2:
+        if len(entry) == 1:
+            col, op, val = '', '', entry[0]
+        elif len(entry) == 2:
             col, op, val = entry[0], '=', entry[1]
         else:
             col, op, val = entry
