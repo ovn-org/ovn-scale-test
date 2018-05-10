@@ -18,6 +18,7 @@ import six
 
 from rally.common.plugin import plugin
 from utils import py_to_val
+from io import StringIO
 
 _NAMESPACE = "ovs"
 
@@ -135,8 +136,10 @@ class DdCtlMixin(object):
     def get(self, table, record, *col_values):
         args = [table, record]
         args += set_colval_args(*col_values)
-        self.run("get", args=args)
 
+        stdout = StringIO()
+        self.run("get", args=args, stdout=stdout)
+        return stdout.getvalue()
 
     def list(self, table, records):
         args = [table]
