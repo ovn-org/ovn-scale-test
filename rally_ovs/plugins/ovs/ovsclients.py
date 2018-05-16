@@ -135,7 +135,8 @@ class DdCtlMixin(object):
 
     def get(self, table, record, *col_values):
         args = [table, record]
-        args += set_colval_args(*col_values)
+        for entry in col_values:
+            args.append("%s" % entry)
 
         stdout = StringIO()
         self.run("get", args=args, stdout=stdout)
