@@ -16,6 +16,7 @@ from rally_ovs.plugins.ovs import scenario
 from rally.task import atomic
 from rally.common import logging
 from rally import exceptions
+from rally_ovs.plugins.ovs import ovnclients
 from rally_ovs.plugins.ovs import utils
 import random
 import netaddr
@@ -23,10 +24,7 @@ import netaddr
 LOG = logging.getLogger(__name__)
 
 
-
-class OvnScenario(scenario.OvsScenario):
-
-
+class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
 
 
@@ -35,46 +33,8 @@ class OvnScenario(scenario.OvsScenario):
     '''
     @atomic.action_timer("ovn.create_lswitch")
     def _create_lswitches(self, lswitch_create_args, num_switches=-1):
-
         print("create lswitch")
-        self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
-
-
-        if (num_switches == -1):
-            num_switches = lswitch_create_args.get("amount", 1)
-        batch = lswitch_create_args.get("batch", num_switches)
-
-        start_cidr = lswitch_create_args.get("start_cidr", "")
-        if start_cidr:
-            start_cidr = netaddr.IPNetwork(start_cidr)
-
-        LOG.info("Create lswitches method: %s" % self.install_method)
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
-        ovn_nbctl.enable_batch_mode()
-
-        flush_count = batch
-        lswitches = []
-        for i in range(num_switches):
-            name = self.generate_random_name()
-
-            lswitch = ovn_nbctl.lswitch_add(name)
-            if start_cidr:
-                lswitch["cidr"] = start_cidr.next(i)
-
-            LOG.info("create %(name)s %(cidr)s" % \
-                      {"name": name, "cidr": lswitch.get("cidr", "")})
-            lswitches.append(lswitch)
-
-            flush_count -= 1
-            if flush_count < 1:
-                ovn_nbctl.flush()
-                flush_count = batch
-
-        ovn_nbctl.flush() # ensure all commands be run
-        ovn_nbctl.enable_batch_mode(False)
-        return lswitches
-
+        return super(OvnScenario, self)._create_lswitches(lswitch_create_args, num_switches)
 
     @atomic.optional_action_timer("ovn.list_lswitch")
     def _list_lswitches(self):
@@ -245,73 +205,13 @@ class OvnScenario(scenario.OvsScenario):
     @atomic.action_timer("ovn_network.create_routers")
     def _create_routers(self, router_create_args):
         LOG.info("Create Logical routers")
-        self.RESOURCE_NAME_FORMAT = "lrouter_XXXXXX_XXXXXX"
-
-        amount = router_create_args.get("amount", 1)
-        batch = router_create_args.get("batch", 1)
-
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
-        ovn_nbctl.enable_batch_mode()
-
-        flush_count = batch
-        lrouters = []
-
-        for i in range(amount):
-            name = self.generate_random_name()
-            lrouter = ovn_nbctl.lrouter_add(name)
-            lrouters.append(lrouter)
-
-            flush_count -= 1
-            if flush_count < 1:
-                ovn_nbctl.flush()
-                flush_count = batch
-
-        ovn_nbctl.flush() # ensure all commands be run
-        ovn_nbctl.enable_batch_mode(False)
-
-        return lrouters
-
-
-    def _connect_network_to_router(self, router, network):
-        LOG.info("Connect network %s to router %s" % (network["name"], router["name"]))
-
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        install_method = self.install_method
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
-        ovn_nbctl.enable_batch_mode(False)
-
-
-        base_mac = [i[:2] for i in self.task["uuid"].split('-')]
-        base_mac[0] = str(hex(int(base_mac[0], 16) & 254))
-        base_mac[3:] = ['00']*3
-        mac = utils.get_random_mac(base_mac)
-
-        lrouter_port = ovn_nbctl.lrouter_port_add(router["name"], network["name"], mac,
-                                                  str(network["cidr"]))
-        ovn_nbctl.flush()
-
-
-        switch_router_port = "rp-" + network["name"]
-        lport = ovn_nbctl.lswitch_port_add(network["name"], switch_router_port)
-        ovn_nbctl.db_set('Logical_Switch_Port', switch_router_port,
-                         ('options', {"router-port":network["name"]}),
-                         ('type', 'router'),
-                         ('address', 'router'))
-        ovn_nbctl.flush()
+        return super(OvnScenario, self)._create_routers(router_create_args)
 
     @atomic.action_timer("ovn_network.connect_network_to_router")
     def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
-        j = 0
-        for i in range(len(lrouters)):
-            lrouter = lrouters[i]
-            LOG.info("Connect %s networks to router %s" % (networks_per_router, lrouter["name"]))
-            for k in range(j, j+int(networks_per_router)):
-                lnetwork = lnetworks[k]
-                LOG.info("connect networks %s cidr %s" % (lnetwork["name"], lnetwork["cidr"]))
-                self._connect_network_to_router(lrouter, lnetwork)
-
-            j += int(networks_per_router)
+        super(OvnScenario, self)._connect_networks_to_routers(lnetworks,
+                                                              lrouters,
+                                                              networks_per_router)
 
     @atomic.action_timer("ovn_network.create_phynet")
     def _create_phynet(self, lswitches, physnet, batch):
