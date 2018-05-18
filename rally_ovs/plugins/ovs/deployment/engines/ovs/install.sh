@@ -5,6 +5,7 @@ OVS_BRANCH=$2
 OVS_USER=$3
 REPO_ACTION=$4
 
+export PATH=$PATH:/usr/sbin
 
 echo "OVS_REPO: $OVS_REPO"
 echo "OVS_BRANCH: $OVS_BRANCH"
