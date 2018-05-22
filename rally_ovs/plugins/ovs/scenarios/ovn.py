@@ -247,10 +247,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
         return lswitches
 
-
-
-    @atomic.action_timer("ovn_network.bind_port")
-    def _bind_ports(self, lports, sandboxes, port_bind_args):
+    def _bind_ports_and_wait(self, lports, sandboxes, port_bind_args):
         port_bind_args = port_bind_args or {}
         wait_up = port_bind_args.get("wait_up", False)
         # "wait_sync" takes effect only if wait_up is True.
@@ -261,12 +258,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 "Unknown value for wait_sync: %s. "
                 "Only 'hv', 'sb' and 'none' are allowed.") % wait_sync)
 
+        LOG.info("Bind lports method: %s" % self.install_method)
+
+        self._bind_ports(lports, sandboxes, port_bind_args)
+        if wait_up:
+            self._wait_up_port(lports, wait_sync)
+
+    @atomic.action_timer("ovn_network.bind_port")
+    def _bind_ports(self, lports, sandboxes, port_bind_args):
         sandbox_num = len(sandboxes)
         lport_num = len(lports)
         lport_per_sandbox = (lport_num + sandbox_num - 1) / sandbox_num
-
-        LOG.info("Bind lports method: %s" % self.install_method)
-        install_method = self.install_method
 
         if (len(lports) < len(sandboxes)):
             for lport in lports:
@@ -275,7 +277,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 sandbox = sandbox_data['name']
                 ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
 
-                ovs_vsctl.set_sandbox(sandbox, install_method)
+                ovs_vsctl.set_sandbox(sandbox, self.install_method)
                 ovs_vsctl.enable_batch_mode()
                 port_name = lport["name"]
                 LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
@@ -295,7 +297,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 sandbox = sandboxes[j]["name"]
                 farm = sandboxes[j]["farm"]
                 ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-                ovs_vsctl.set_sandbox(sandbox, install_method)
+                ovs_vsctl.set_sandbox(sandbox, self.install_method)
                 ovs_vsctl.enable_batch_mode()
                 for lport in lport_slice:
                     port_name = lport["name"]
@@ -310,15 +312,11 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 ovs_vsctl.flush()
                 j += 1
 
-        if wait_up:
-            self._wait_up_port(lports, wait_sync, install_method)
-
-
     @atomic.action_timer("ovn_network.wait_port_up")
-    def _wait_up_port(self, lports, wait_sync, install_method):
+    def _wait_up_port(self, lports, wait_sync):
         LOG.info("wait port up. sync: %s" % wait_sync)
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
         ovn_nbctl.enable_batch_mode(True)
 
         for lport in lports:
