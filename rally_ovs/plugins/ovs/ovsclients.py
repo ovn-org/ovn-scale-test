@@ -208,6 +208,11 @@ class DdCtlMixin(object):
         args += set_colval_args(*col_values)
         self.run("add", args=args)
 
+    def remove(self, table, record, *col_values):
+        args = [table, record]
+        args += set_colval_args(*col_values)
+        self.run("remove", args=args)
+
     def set(self, table, record, *col_values):
         args = [table, record]
         args += set_colval_args(*col_values)
