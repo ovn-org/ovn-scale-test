@@ -17,6 +17,8 @@
 #set -e # exit on first error
 #set -x
 
+export PATH=$PATH:/usr/sbin
+
 run() {
     (cd "$sandbox" && "$@") || exit 1
 }
@@ -572,6 +574,7 @@ OVS_RUNDIR=$sandbox; export OVS_RUNDIR
 OVS_LOGDIR=$sandbox; export OVS_LOGDIR
 OVS_DBDIR=$sandbox; export OVS_DBDIR
 OVS_SYSCONFDIR=$sandbox; export OVS_SYSCONFDIR
+PATH=/usr/local/sbin:/usr/sbin:$PATH; export PATH
 EOF
 
 . $sandbox_name/sandbox.rc
