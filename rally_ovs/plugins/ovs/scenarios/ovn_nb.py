@@ -147,5 +147,9 @@ class OvnNorthbound(ovn.OvnScenario):
 
         self._delete_acl(lswitches)
 
+    @scenario.configure(context={})
+    def create_and_remove_address_set(self, name, address_list):
+        self._create_address_set(name, address_list)
+        self._remove_address_set(name)
 
 
