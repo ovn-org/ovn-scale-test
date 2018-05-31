@@ -60,7 +60,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         pass
 
     @atomic.action_timer("ovn.create_lport")
-    def _create_lports(self, lswitch, lport_create_args = [], lport_amount=1):
+    def _create_lports(self, lswitch, lport_create_args = [], lport_amount=1,
+                       lport_ip_shift = 1):
         LOG.info("create %d lports on lswitch %s" % \
                             (lport_amount, lswitch["name"]))
 
@@ -74,13 +75,14 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         network_cidr = lswitch.get("cidr", None)
         ip_addrs = None
         if network_cidr:
-            end_ip = network_cidr.ip + lport_amount
+            end_ip = network_cidr.ip + lport_amount + lport_ip_shift
             if not end_ip in network_cidr:
                 message = _("Network %s's size is not big enough for %d lports.")
                 raise exceptions.InvalidConfigException(
                             message  % (network_cidr, lport_amount))
 
-            ip_addrs = netaddr.iter_iprange(network_cidr.ip, network_cidr.last)
+            ip_addrs = netaddr.iter_iprange(network_cidr.ip + lport_ip_shift,
+                                            network_cidr.last)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
         ovn_nbctl.set_sandbox("controller-sandbox", install_method)
