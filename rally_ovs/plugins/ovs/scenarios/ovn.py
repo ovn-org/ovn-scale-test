@@ -373,6 +373,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovn_nbctl.add("Address_Set", name, ('addresses', ' ', addr_list))
         ovn_nbctl.flush()
 
+    def _address_set_remove_addrs(self, set_name, address_list):
+        LOG.info("remove [%s] from address_set %s" % (address_list, set_name))
+
+        name = "\"" + set_name + "\""
+        addr_list="\"" + address_list + "\""
+
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.remove("Address_Set", name, ('addresses', ' ', addr_list))
+        ovn_nbctl.flush()
+
     def _remove_address_set(self, set_name):
         LOG.info("remove %s address_set" % set_name)
 
