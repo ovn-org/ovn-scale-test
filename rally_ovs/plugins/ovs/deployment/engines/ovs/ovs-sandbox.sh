@@ -17,6 +17,9 @@
 #set -e # exit on first error
 #set -x
 
+# Adjust PATH for non-interactive SSH sessions.
+export PATH=$PATH:/usr/local/sbin:/usr/sbin
+
 run() {
     (cd "$sandbox" && "$@") || exit 1
 }
