@@ -140,7 +140,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
 
 
-    @atomic.action_timer("ovn.create_acl")
+    @atomic.optional_action_timer("ovn.create_acl")
     def _create_acl(self, lswitch, lports, acl_create_args, acls_per_port):
         sw = lswitch["name"]
         LOG.info("create %d ACLs on lswitch %s" % (acls_per_port, sw))
