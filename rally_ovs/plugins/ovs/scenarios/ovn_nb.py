@@ -123,7 +123,7 @@ class OvnNorthbound(ovn.OvnScenario):
 
         lswitches = self.context["ovn-nb"]
 
-        self._delete_acl(lswitches)
+        self._delete_all_acls_in_lswitches(lswitches)
 
 
     @validation.number("lports_per_lswitch", minval=1, integer_only=True)
@@ -145,7 +145,7 @@ class OvnNorthbound(ovn.OvnScenario):
                              acl_create_args, acls_per_port)
 
 
-        self._delete_acl(lswitches)
+        self._delete_all_acls_in_lswitches(lswitches)
 
     @scenario.configure(context={})
     def create_and_remove_address_set(self, name, address_list):

@@ -190,18 +190,22 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovn_nbctl.acl_list(lswitch["name"])
 
 
-    @atomic.action_timer("ovn.delete_acl")
-    def _delete_acl(self, lswitches):
-        LOG.info("delete ACLs")
-
+    @atomic.action_timer("ovn.delete_all_acls")
+    def _delete_all_acls_in_lswitches(self, lswitches):
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox")
         ovn_nbctl.enable_batch_mode(True)
         for lswitch in lswitches:
-            LOG.info("delete ACLs on lswitch %s" % lswitch["name"])
-            ovn_nbctl.acl_del(lswitch["name"])
-
+            self._delete_acls(lswitch)
         ovn_nbctl.flush()
+
+    def _delete_acls(self, lswitch, direction=None, priority=None,
+                     match=None, flush=False):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox")
+        LOG.info("delete ACLs on lswitch %s" % lswitch["name"])
+        ovn_nbctl.acl_del(lswitch["name"], direction, priority, match)
+        if flush:
+            ovn_nbctl.flush()
 
 
     @atomic.action_timer("ovn_network.create_routers")
