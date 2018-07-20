@@ -50,7 +50,8 @@ class OvnNbctl(OvsClient):
             self.install_method = install_method
             self.host_container = host_container
 
-        def run(self, cmd, opts=[], args=[], stdout=sys.stdout, stderr=sys.stderr):
+        def run(self, cmd, opts=[], args=[], stdout=sys.stdout,
+                stderr=sys.stderr, raise_on_error=True):
             self.cmds = self.cmds or []
 
             if self.batch_mode:
@@ -74,7 +75,7 @@ class OvnNbctl(OvsClient):
                 self.cmds.append(" ".join(cmd))
 
             self.ssh.run("\n".join(self.cmds),
-                         stdout=stdout, stderr=stderr)
+                         stdout=stdout, stderr=stderr, raise_on_error=raise_on_error)
 
             self.cmds = None
 
