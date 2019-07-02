@@ -1,0 +1,67 @@
+{% set farm_nodes = farm_nodes or 1 %}
+{% set networks = networks or 1 %}
+{% set internal_ports_cleanup = internal_ports_cleanup or 0 %}
+{
+    "version": 2,
+    "title": "Create and bind port",
+    "subtasks": [
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Create sandbox on farm {{i}}",
+            "workloads": [{
+                "name": "OvnSandbox.create_sandbox",
+                "args": {
+                    "sandbox_create_args": {
+                        "farm": "ovn-farm-node-{{i}}",
+                        "amount": 1,
+                        "batch" : 1,
+                        "start_cidr": "192.168.42.{{i + 10}}/24",
+                        "net_dev": "eth1",
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": 1},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {% endfor %}
+        {% for i in range(0, networks) %}
+        {
+            "title": "Create and bind internal ports",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNetwork.create_and_bind_ports",
+                    "args": {
+                        "network_create_args": {
+                            "amount": 1,
+                            "batch": 1,
+                            "start_cidr": "42.{{i}}.1.0/24"
+                        },
+                        "port_create_args" : {"batch": 2},
+                        "ports_per_network": {{ports_per_network}},
+                        "port_bind_args": {
+                            "internal": true,
+                            "wait_up": true
+                        },
+                        "internal_ports_cleanup": {{internal_ports_cleanup}}
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": {"tag": "ToR1"},
+                        "ovn_nb": {}
+                    }
+                }
+            ]
+        },
+        {% endfor %}
+    ]
+}

@@ -112,11 +112,16 @@ class OvnNbctl(OvsClient):
             return {"name":name}
 
 
-        def lswitch_add(self, name):
+        def lswitch_add(self, name, other_cfg={}):
             params = [name]
 
 
             self.run("ls-add", args=params)
+
+            for cfg, val in other_cfg.iteritems():
+                param_cfg = 'other_config:{c}="{v}"'.format(c=cfg, v=val)
+                params = ['Logical_Switch', name, param_cfg]
+                self.run("set", args=params)
 
             return {"name":name}
 
@@ -131,11 +136,11 @@ class OvnNbctl(OvsClient):
             output = stdout.getvalue()
             return parse_lswitch_list(output)
 
-        def lswitch_port_add(self, lswitch, name):
+        def lswitch_port_add(self, lswitch, name, mac='', ip=''):
             params =[lswitch, name]
             self.run("lsp-add", args=params)
 
-            return {"name":name}
+            return {"name":name, "mac":mac, "ip":ip}
 
 
         def lport_list(self, lswitch):
@@ -227,8 +232,140 @@ class OvnNbctl(OvsClient):
 
         return client
 
+@configure("ovn-sbctl")
+class OvnSbctl(OvsClient):
+
+    class _OvnSbctl(DdCtlMixin):
+        def __init__(self, credential):
+            self.ssh = get_ssh_from_credential(credential)
+            self.context = {}
+            self.sandbox = None
+            self.batch_mode = False
+            self.cmds = None
+
+        def enable_batch_mode(self, value=True):
+            self.batch_mode = bool(value)
+
+        def set_sandbox(self, sandbox, install_method="sandbox"):
+            self.sandbox = sandbox
+            self.install_method = install_method
+
+        def run(self, cmd, opts=[], args=[], stdout=sys.stdout, stderr=sys.stderr):
+            self.cmds = self.cmds or []
+
+            if self.batch_mode:
+                cmd = itertools.chain([" -- "], opts, [cmd], args)
+                self.cmds.append(" ".join(cmd))
+                return
+
+            if self.sandbox:
+                cmd_prefix = []
+                if self.install_method == "sandbox":
+                    self.cmds.append(". %s/sandbox.rc" % self.sandbox)
+                elif self.install_method == "docker":
+                    cmd_prefix = ["sudo docker exec ovn-north-database"]
+                elif self.install_method == "physical":
+                    cmd_prefix = ["sudo"]
+
+                cmd = itertools.chain(cmd_prefix, ["ovn-sbctl"], opts, [cmd], args)
+                self.cmds.append(" ".join(cmd))
+
+            self.ssh.run("\n".join(self.cmds),
+                         stdout=stdout, stderr=stderr)
+
+            self.cmds = None
 
 
+        def flush(self):
+            if self.cmds == None or len(self.cmds) == 0:
+                return
+
+            run_cmds = []
+            if self.sandbox:
+                if self.install_method == "sandbox":
+                    run_cmds.append(". %s/sandbox.rc" % self.sandbox)
+                    run_cmds.append("ovn-sbctl" + " ".join(self.cmds))
+                elif self.install_method == "docker":
+                    run_cmds.append("sudo docker exec ovn-north-database ovn-sbctl " + " ".join(self.cmds))
+                elif self.install_method == "physical":
+                    run_cmds.append("sudo ovn-sbctl" + " ".join(self.cmds))
+
+            self.ssh.run("\n".join(run_cmds),
+                         stdout=sys.stdout, stderr=sys.stderr)
+
+            self.cmds = None
+
+
+        def db_set(self, table, record, *col_values):
+            args = [table, record]
+            args += set_colval_args(*col_values)
+            self.run("set", args=args)
+
+        def count_igmp_flows(self, lswitch):
+            stdout = StringIO()
+            self.ssh.run(
+                "ovn-sbctl list ip_multicast | "
+                "grep `ovn-sbctl list datapath_binding | "
+                "grep {sw} -B 1 | grep uuid | cut -f 2 -d ':'` -A 4 | "
+                "grep installed_groups | cut -f 2 -d ':'".format(sw=lswitch),
+                stdout=stdout)
+            return int(stdout.getvalue())
+
+        def sync(self, wait='hv'):
+            # sync command should always be flushed
+            opts = ["--wait=%s" % wait]
+            batch_mode = self.batch_mode
+            if batch_mode:
+                self.flush()
+                self.batch_mode = False
+
+            self.run("sync", opts)
+            self.batch_mode = batch_mode
+
+    def create_client(self):
+        print "*********   call OvnSbctl.create_client"
+
+        client = self._OvnSbctl(self.credential)
+
+        return client
+
+@configure("ovs-ssh")
+class OvsSsh(OvsClient):
+
+    class _OvsSsh(object):
+        def __init__(self, credential):
+            self.ssh = get_ssh_from_credential(credential)
+            self.batch_mode = False
+            self.cmds = None
+
+        def enable_batch_mode(self, value=True):
+            self.batch_mode = bool(value)
+
+        def run(self, cmd):
+            self.cmds = self.cmds or []
+
+            self.cmds.append(cmd)
+            if self.batch_mode:
+                return
+
+            self.flush()
+
+        def run_immediate(self, cmd, stdout=sys.stdout, stderr=sys.stderr):
+            self.ssh.run(cmd, stdout)
+
+        def flush(self):
+            if self.cmds == None:
+                return
+
+            self.ssh.run("\n".join(self.cmds),
+                         stdout=sys.stdout, stderr=sys.stderr)
+
+            self.cmds = None
+
+    def create_client(self):
+        print "*********   call OvsSsh.create_client"
+        client = self._OvsSsh(self.credential)
+        return client
 
 
 @configure("ovs-vsctl")
@@ -250,7 +387,7 @@ class OvsVsctl(OvsClient):
             self.sandbox = sandbox
             self.install_method = install_method
 
-        def run(self, cmd, opts=[], args=[]):
+        def run(self, cmd, opts=[], args=[], extras=[]):
             self.cmds = self.cmds or []
 
             # TODO: tested with non batch_mode only for docker
@@ -261,10 +398,13 @@ class OvsVsctl(OvsClient):
                 if self.install_method == "sandbox":
                     self.cmds.append(". %s/sandbox.rc" % self.sandbox)
                 elif self.install_method == "docker":
-                    self.cmds.append("sudo docker exec %s ovs-vsctl " % self.sandbox + cmd + " " + " ".join(args))
+                    self.cmds.append("sudo docker exec %s ovs-vsctl " % \
+                                     self.sandbox + cmd + \
+                                     " " + " ".join(args) + \
+                                     " " + " ".join(extras))
 
             if self.install_method != "docker":
-                cmd = itertools.chain(["ovs-vsctl"], opts, [cmd], args)
+                cmd = itertools.chain(["ovs-vsctl"], opts, [cmd], args, extras)
                 self.cmds.append(" ".join(cmd))
 
             if self.batch_mode:
@@ -289,10 +429,13 @@ class OvsVsctl(OvsClient):
             self.cmds = None
 
 
-        def add_port(self, bridge, port, may_exist=True):
+        def add_port(self, bridge, port, may_exist=True, internal=False):
             opts = ['--may-exist'] if may_exist else None
-            self.run('add-port', opts, [bridge, port])
+            extras = ['--', 'set interface {} type=internal'.format(port)] if internal else None
+            self.run('add-port', opts, [bridge, port], extras)
 
+        def del_port(self, port):
+            self.run('del-port', args=[port])
 
         def db_set(self, table, record, *col_values):
             args = [table, record]

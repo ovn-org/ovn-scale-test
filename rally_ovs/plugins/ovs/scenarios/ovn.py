@@ -27,6 +27,31 @@ LOG = logging.getLogger(__name__)
 class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
 
+    def __init__(self, context=None):
+        super(OvnScenario, self).__init__(context)
+        self._init_conns(self.context)
+    
+    def _init_conns(self, context):
+        self._ssh_conns = {}
+
+        if not context:
+            return
+
+        for sandbox in context["sandboxes"]:
+            sb_name = sandbox["name"]
+            farm = sandbox["farm"]
+            ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+            ovs_ssh.enable_batch_mode()
+            self._ssh_conns[sb_name] = ovs_ssh
+
+    def _get_conn(self, sb_name):
+        return self._ssh_conns[sb_name]
+
+    def _flush_conns(self, cmds=[]):
+        for _, ovs_ssh in self._ssh_conns.iteritems():
+            for cmd in cmds:
+                ovs_ssh.run(cmd)
+            ovs_ssh.flush()      
 
     '''
     return: [{"name": "lswitch_xxxx_xxxxx", "cidr": netaddr.IPNetwork}, ...]
@@ -65,7 +90,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         LOG.info("create %d lports on lswitch %s" % \
                             (lport_amount, lswitch["name"]))
 
-        self.RESOURCE_NAME_FORMAT = "lport_XXXXXX_XXXXXX"
+        self.RESOURCE_NAME_FORMAT = "lpXXXXXX_XXXXXX"
 
         batch = lport_create_args.get("batch", lport_amount)
         port_security = lport_create_args.get("port_security", True)
@@ -97,10 +122,12 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         lports = []
         for i in range(lport_amount):
             name = self.generate_random_name()
-            lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name)
-
-            ip = str(ip_addrs.next()) if ip_addrs else ""
+            ip_addr = ip_addrs.next()
+            ip = str(ip_addr) if ip_addrs else ""
             mac = utils.get_random_mac(base_mac)
+            ip_mask = '{}/{}'.format(ip, network_cidr.prefixlen)
+            lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name, mac,
+                                               ip_mask)
 
             ovn_nbctl.lport_set_addresses(name, [mac, ip])
             if port_security:
@@ -272,8 +299,62 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         if wait_up:
             self._wait_up_port(lports, wait_sync)
 
+    def _bind_ovs_internal_vm(self, lport, sandbox, ovs_ssh):
+        port_name = lport["name"]
+        port_mac = lport["mac"]
+        port_ip = lport["ip"]
+        # Disable tx offloading on the port
+        ovs_ssh.run('ethtool -K {p} tx off &> /dev/null'.format(p=port_name))
+        ovs_ssh.run('ip netns add {p}'.format(p=port_name))
+        ovs_ssh.run('ip link set {p} netns {p}'.format(p=port_name))
+        ovs_ssh.run('ip netns exec {p} ip link set {p} address {m}'.format(
+            p=port_name, m=port_mac)
+        )
+        ovs_ssh.run('ip netns exec {p} ip addr add {ip} dev {p}'.format(
+            p=port_name, ip=port_ip)
+        )
+        ovs_ssh.run('ip netns exec {p} ip link set {p} up'.format(
+            p=port_name)
+        )
+
+        # Add route for multicast traffic
+        ovs_ssh.run('ip netns exec {p} ip route add 224/4 dev {p}'.format(
+            p=port_name)
+        )
+
+        # Store the port in the context so we can use its information later
+        # on or at cleanup
+        self.context["ovs-internal-ports"][port_name] = (lport, sandbox)
+
+    def _delete_ovs_internal_vm(self, lport, ovs_ssh, ovs_vsctl):
+        port_name = lport["name"]
+        ovs_vsctl.del_port(port_name)
+        ovs_ssh.run('ip netns del {p}'.format(p=port_name))
+
+    def _cleanup_ovs_internal_ports(self, sandboxes):
+        conns = {}
+        for sandbox in sandboxes:
+            sb_name = sandbox["name"]
+            farm = sandbox["farm"]
+            ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+            ovs_ssh.enable_batch_mode()
+            ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
+            ovs_vsctl.set_sandbox(sandbox, self.install_method)
+            ovs_vsctl.enable_batch_mode()
+            conns[sb_name] = (ovs_ssh, ovs_vsctl)
+
+        for _, (lport, sandbox) in self.context["ovs-internal-ports"].iteritems():
+            sb_name = sandbox["name"]
+            (ovs_ssh, ovs_vsctl) = conns[sb_name]
+            self._delete_ovs_internal_vm(lport, ovs_ssh, ovs_vsctl)
+
+        for _, (ovs_ssh, ovs_vsctl) in conns.iteritems():
+            ovs_vsctl.flush()
+            ovs_ssh.flush()
+
     @atomic.action_timer("ovn_network.bind_port")
     def _bind_ports(self, lports, sandboxes, port_bind_args):
+        internal = port_bind_args.get("internal", False)
         sandbox_num = len(sandboxes)
         lport_num = len(lports)
         lport_per_sandbox = (lport_num + sandbox_num - 1) / sandbox_num
@@ -288,14 +369,22 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 ovs_vsctl.set_sandbox(sandbox, self.install_method)
                 ovs_vsctl.enable_batch_mode()
                 port_name = lport["name"]
+                port_mac = lport["mac"]
+                port_ip = lport["ip"]
                 LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
 
-                ovs_vsctl.add_port('br-int', port_name)
+                ovs_vsctl.add_port('br-int', port_name, internal=internal)
                 ovs_vsctl.db_set('Interface', port_name,
                                  ('external_ids', {"iface-id": port_name,
                                                    "iface-status": "active"}),
                                  ('admin_state', 'up'))
                 ovs_vsctl.flush()
+
+                # If it's an internal port create a "fake vm"
+                if internal:
+                    ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+                    self._bind_ovs_internal_vm(lport, sandbox_data, ovs_ssh)
+                    ovs_ssh.flush()
 
         else:
             j = 0
@@ -307,17 +396,30 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
                 ovs_vsctl.set_sandbox(sandbox, self.install_method)
                 ovs_vsctl.enable_batch_mode()
-                for lport in lport_slice:
+                for index, lport in enumerate(lport_slice):
                     port_name = lport["name"]
 
                     LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
 
-                    ovs_vsctl.add_port('br-int', port_name)
+                    ovs_vsctl.add_port('br-int', port_name, internal=internal)
                     ovs_vsctl.db_set('Interface', port_name,
                                      ('external_ids', {"iface-id":port_name,
                                                        "iface-status":"active"}),
                                      ('admin_state', 'up'))
+                    if index % 400 == 0:
+                        ovs_vsctl.flush()
                 ovs_vsctl.flush()
+
+                # If it's an internal port create a "fake vm"
+                if internal:
+                    ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+                    ovs_ssh.enable_batch_mode()
+
+                    for index, lport in enumerate(lport_slice):
+                        self._bind_ovs_internal_vm(lport, sandboxes[j], ovs_ssh)
+                        if index % 200 == 0:
+                            ovs_ssh.flush()
+                    ovs_ssh.flush()
                 j += 1
 
     @atomic.action_timer("ovn_network.wait_port_up")
@@ -327,8 +429,10 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
         ovn_nbctl.enable_batch_mode(True)
 
-        for lport in lports:
+        for index, lport in enumerate(lports):
             ovn_nbctl.wait_until('Logical_Switch_Port', lport["name"], ('up', 'true'))
+            if index % 400 == 0:
+                ovn_nbctl.flush()
 
         if wait_sync != "none":
             ovn_nbctl.sync(wait_sync)
