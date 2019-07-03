@@ -169,6 +169,8 @@ class SandboxScenario(scenario.OvsScenario):
 
             if install_method == "docker":
                 print "Do not run ssh; sandbox installed by ansible-docker"
+            elif install_method == "physical":
+                print "Do not run ssh; sandbox installed on physical test bed"
             elif install_method == "sandbox":
                 self._do_create_sandbox(ssh, cmds)
             else:

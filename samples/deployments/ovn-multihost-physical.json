@@ -1,0 +1,35 @@
+{
+    "type": "OvnMultihostEngine",
+    "controller": {
+        "type": "OvnSandboxControllerEngine",
+        "deployment_name": "ovn-controller-node",
+        "install_method": "physical",
+        "controller_cidr": "192.168.42.254/24",
+        "ovs_user": "root",
+        "provider": {
+            "type": "OvsSandboxProvider",
+            "credentials": [
+                {
+                    "host": "192.168.42.254",
+                    "user": "root"}
+            ]
+        }
+    },
+    "nodes": [
+        {
+            "type": "OvnSandboxFarmEngine",
+            "deployment_name": "ovn-farm-node-0",
+            "install_method": "physical",
+            "ovs_user": "root",
+            "provider": {
+                "type": "OvsSandboxProvider",
+                "credentials": [
+                    {
+                        "host": "192.168.20.20",
+                        "user": "root"}
+                ]
+            }
+        }
+    ]
+
+}
