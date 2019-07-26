@@ -301,14 +301,20 @@ class OvnSbctl(OvsClient):
             args += set_colval_args(*col_values)
             self.run("set", args=args)
 
-        def count_igmp_flows(self, lswitch):
+        def count_igmp_flows(self, lswitch, network_prefix='239'):
             stdout = StringIO()
             self.ssh.run(
-                "ovn-sbctl list ip_multicast | "
-                "grep `ovn-sbctl list datapath_binding | "
-                "grep {sw} -B 1 | grep uuid | cut -f 2 -d ':'` -A 4 | "
-                "grep installed_groups | cut -f 2 -d ':'".format(sw=lswitch),
+                "ovn-sbctl list datapath_binding | grep {sw} -B 1 | "
+                "grep uuid | cut -f 2 -d ':'".format(sw=lswitch),
                 stdout=stdout)
+            uuid = stdout.getvalue().rstrip()
+            stdout = StringIO()
+            self.ssh.run(
+                "ovn-sbctl list logical_flow | grep 'dst == {nw}' -B 1 | "
+                "grep {uuid} -B 1 | wc -l".format(
+                uuid=uuid, nw=network_prefix),
+                stdout=stdout
+            )
             return int(stdout.getvalue())
 
         def sync(self, wait='hv'):
