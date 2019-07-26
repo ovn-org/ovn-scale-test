@@ -37,6 +37,10 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
 
+        mcast_snoop = lswitch_create_args.get("mcast_snoop", "true")
+        mcast_idle = lswitch_create_args.get("mcast_idle_timeout", 300)
+        mcast_table_size = lswitch_create_args.get("mcast_table_size", 2048)
+
         LOG.info("Create lswitches method: %s" % self.install_method)
         ovn_nbctl = self.controller_client("ovn-nbctl")
         ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
@@ -47,7 +51,13 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         for i in range(num_switches):
             name = self.generate_random_name()
 
-            lswitch = ovn_nbctl.lswitch_add(name)
+            other_cfg = {
+                'mcast_snoop': mcast_snoop,
+                'mcast_idle_timeout': mcast_idle,
+                'mcast_table_size': mcast_table_size
+            }
+
+            lswitch = ovn_nbctl.lswitch_add(name, other_cfg)
             if start_cidr:
                 lswitch["cidr"] = start_cidr.next(i)
 

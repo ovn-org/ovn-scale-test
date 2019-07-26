@@ -26,6 +26,8 @@ LOG = logging.getLogger(__name__)
 class OvnNetwork(ovn.OvnScenario):
     """scenarios for OVN network."""
 
+    def __init__(self, context=None):
+        super(OvnNetwork, self).__init__(context)
 
     @scenario.configure(context={})
     def create_networks(self, network_create_args):
@@ -85,7 +87,8 @@ class OvnNetwork(ovn.OvnScenario):
                               network_create_args=None,
                               port_create_args=None,
                               ports_per_network=None,
-                              port_bind_args=None):
+                              port_bind_args=None,
+                              internal_ports_cleanup=True):
 
         sandboxes = self.context["sandboxes"]
 
@@ -103,10 +106,15 @@ class OvnNetwork(ovn.OvnScenario):
                     if start_cidr:
                         lswitches[i]["cidr"] = start_cidr.next(i)
 
-        for lswitch in lswitches:
-            lports = self._create_lports(lswitch, port_create_args, ports_per_network)
-            self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
+        lports = []
 
+        for lswitch in lswitches:
+            lports += self._create_lports(lswitch, port_create_args, ports_per_network)
+
+        self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
+
+        if internal_ports_cleanup:
+            self._cleanup_ovs_internal_ports(sandboxes)
 
     def bind_ports(self):
         pass
