@@ -41,6 +41,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             sb_name = sandbox["name"]
             farm = sandbox["farm"]
             ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+            ovs_ssh.set_sandbox(sb_name, self.install_method,
+                                sandbox["host_container"])
             ovs_ssh.enable_batch_mode()
             self._ssh_conns[sb_name] = ovs_ssh
 
@@ -48,10 +50,10 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         return self._ssh_conns[sb_name]
 
     def _flush_conns(self, cmds=[]):
-        for _, ovs_ssh in self._ssh_conns.iteritems():
+        for _, ovs_ssh in self._ssh_conns.items():
             for cmd in cmds:
                 ovs_ssh.run(cmd)
-            ovs_ssh.flush()      
+            ovs_ssh.flush()
 
     '''
     return: [{"name": "lswitch_xxxx_xxxxx", "cidr": netaddr.IPNetwork}, ...]
@@ -65,7 +67,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _list_lswitches(self):
         print("list lswitch")
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
         return ovn_nbctl.lswitch_list()
 
@@ -73,7 +76,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _delete_lswitch(self, lswitches):
         print("delete lswitch")
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
         for lswitch in lswitches:
             ovn_nbctl.lswitch_del(lswitch["name"])
@@ -96,7 +100,6 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         port_security = lport_create_args.get("port_security", True)
 
         LOG.info("Create lports method: %s" % self.install_method)
-        install_method = self.install_method
 
         network_cidr = lswitch.get("cidr", None)
         ip_addrs = None
@@ -111,7 +114,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                                             network_cidr.last)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
 
         base_mac = [i[:2] for i in self.task["uuid"].split('-')]
@@ -122,7 +126,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         lports = []
         for i in range(lport_amount):
             name = self.generate_random_name()
-            ip_addr = ip_addrs.next()
+            ip_addr = next(ip_addrs)
             ip = str(ip_addr) if ip_addrs else ""
             mac = utils.get_random_mac(base_mac)
             ip_mask = '{}/{}'.format(ip, network_cidr.prefixlen)
@@ -149,7 +153,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _delete_lport(self, lports):
         print("delete lport")
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
         for lport in lports:
             ovn_nbctl.lport_del(lport["name"])
@@ -158,10 +163,11 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
 
     @atomic.action_timer("ovn.list_lports")
-    def _list_lports(self, lswitches, install_method = "sandbox"):
+    def _list_lports(self, lswitches):
         print("list lports")
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
         for lswitch in lswitches:
             LOG.info("list lports on lswitch %s" % lswitch["name"])
@@ -196,7 +202,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             p = "outport"
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
         for lport in lports:
             for i in range(acls_per_port):
@@ -212,7 +219,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _list_acl(self, lswitches):
         LOG.info("list ACLs")
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
         for lswitch in lswitches:
             LOG.info("list ACLs on lswitch %s" % lswitch["name"])
@@ -222,6 +230,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     @atomic.action_timer("ovn.delete_all_acls")
     def _delete_all_acls_in_lswitches(self, lswitches):
         ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(True)
         for lswitch in lswitches:
             self._delete_acls(lswitch)
@@ -230,7 +240,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _delete_acls(self, lswitch, direction=None, priority=None,
                      match=None, flush=False):
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         LOG.info("delete ACLs on lswitch %s" % lswitch["name"])
         ovn_nbctl.acl_del(lswitch["name"], direction, priority, match)
         if flush:
@@ -252,7 +263,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _create_phynet(self, lswitches, physnet, batch):
         LOG.info("Create phynet method: %s" % self.install_method)
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
@@ -303,8 +315,10 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         port_name = lport["name"]
         port_mac = lport["mac"]
         port_ip = lport["ip"]
-        # Disable tx offloading on the port
-        ovs_ssh.run('ethtool -K {p} tx off &> /dev/null'.format(p=port_name))
+        # TODO: some containers don't have ethtool installed
+        if not sandbox["host_container"]:
+            # Disable tx offloading on the port
+            ovs_ssh.run('ethtool -K {p} tx off &> /dev/null'.format(p=port_name))
         ovs_ssh.run('ip netns add {p}'.format(p=port_name))
         ovs_ssh.run('ip link set {p} netns {p}'.format(p=port_name))
         ovs_ssh.run('ip netns exec {p} ip link set {p} address {m}'.format(
@@ -336,19 +350,23 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         for sandbox in sandboxes:
             sb_name = sandbox["name"]
             farm = sandbox["farm"]
+            host_container = sandbox["host_container"]
             ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+            ovs_ssh.set_sandbox(sb_name, self.install_method,
+                                host_container)
             ovs_ssh.enable_batch_mode()
             ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-            ovs_vsctl.set_sandbox(sandbox, self.install_method)
+            ovs_vsctl.set_sandbox(sandbox, self.install_method,
+                                  host_container)
             ovs_vsctl.enable_batch_mode()
             conns[sb_name] = (ovs_ssh, ovs_vsctl)
 
-        for _, (lport, sandbox) in self.context["ovs-internal-ports"].iteritems():
+        for _, (lport, sandbox) in self.context["ovs-internal-ports"].items():
             sb_name = sandbox["name"]
             (ovs_ssh, ovs_vsctl) = conns[sb_name]
             self._delete_ovs_internal_vm(lport, ovs_ssh, ovs_vsctl)
 
-        for _, (ovs_ssh, ovs_vsctl) in conns.iteritems():
+        for _, (ovs_ssh, ovs_vsctl) in conns.items():
             ovs_vsctl.flush()
             ovs_ssh.flush()
 
@@ -357,7 +375,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         internal = port_bind_args.get("internal", False)
         sandbox_num = len(sandboxes)
         lport_num = len(lports)
-        lport_per_sandbox = (lport_num + sandbox_num - 1) / sandbox_num
+        lport_per_sandbox = int((lport_num + sandbox_num - 1) / sandbox_num)
 
         if (len(lports) < len(sandboxes)):
             for lport in lports:
@@ -366,7 +384,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 sandbox = sandbox_data['name']
                 ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
 
-                ovs_vsctl.set_sandbox(sandbox, self.install_method)
+                ovs_vsctl.set_sandbox(sandbox, self.install_method,
+                                      sandbox_data['host_container'])
                 ovs_vsctl.enable_batch_mode()
                 port_name = lport["name"]
                 port_mac = lport["mac"]
@@ -394,7 +413,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 sandbox = sandboxes[j]["name"]
                 farm = sandboxes[j]["farm"]
                 ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-                ovs_vsctl.set_sandbox(sandbox, self.install_method)
+                ovs_vsctl.set_sandbox(sandbox, self.install_method,
+                                      sandboxes[j]["host_container"])
                 ovs_vsctl.enable_batch_mode()
                 for index, lport in enumerate(lport_slice):
                     port_name = lport["name"]
@@ -426,7 +446,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _wait_up_port(self, lports, wait_sync):
         LOG.info("wait port up. sync: %s" % wait_sync)
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(True)
 
         for index, lport in enumerate(lports):
@@ -440,13 +461,14 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     @atomic.action_timer("ovn_network.list_oflow_count_for_sandboxes")
     def _list_oflow_count_for_sandboxes(self, sandboxes,
                                            sandbox_args):
-        install_method = self.install_method
         oflow_data = []
         for sandbox in sandboxes:
             sandbox_name = sandbox["name"]
             farm = sandbox["farm"]
+            host_container = sandbox_name["host_container"]
             ovs_ofctl = self.farm_clients(farm, "ovs-ofctl")
-            ovs_ofctl.set_sandbox(sandbox_name, install_method)
+            ovs_ofctl.set_sandbox(sandbox_name, self.install_method,
+                                  host_container)
             bridge = sandbox_args.get('bridge', 'br-int')
             lflow_count = ovs_ofctl.dump_flows(bridge)
 
@@ -468,7 +490,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         addr_list="\"" + address_list + "\""
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.create("Address_Set", name, ('addresses', addr_list))
         ovn_nbctl.flush()
 
@@ -479,7 +502,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         addr_list="\"" + address_list + "\""
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.add("Address_Set", name, ('addresses', ' ', addr_list))
         ovn_nbctl.flush()
 
@@ -490,7 +514,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         addr_list="\"" + address_list + "\""
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.remove("Address_Set", name, ('addresses', ' ', addr_list))
         ovn_nbctl.flush()
 
@@ -498,7 +523,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         LOG.info("remove %s address_set" % set_name)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.destroy("Address_Set", set_name)
         ovn_nbctl.flush()
 
@@ -506,6 +532,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         LOG.info("get %s address_set" % set_name)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
         return ovn_nbctl.get("Address_Set", set_name, 'addresses')
