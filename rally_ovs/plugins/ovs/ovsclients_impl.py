@@ -436,8 +436,8 @@ class OvsVsctl(OvsClient):
 
 
         def add_port(self, bridge, port, may_exist=True, internal=False):
-            opts = ['--may-exist'] if may_exist else None
-            extras = ['--', 'set interface {} type=internal'.format(port)] if internal else None
+            opts = ['--may-exist'] if may_exist else []
+            extras = ['--', 'set interface {} type=internal'.format(port)] if internal else []
             self.run('add-port', opts, [bridge, port], extras)
 
         def del_port(self, port):
