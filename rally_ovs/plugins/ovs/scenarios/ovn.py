@@ -20,6 +20,7 @@ from rally_ovs.plugins.ovs import ovnclients
 from rally_ovs.plugins.ovs import utils
 import random
 import netaddr
+from io import StringIO
 
 LOG = logging.getLogger(__name__)
 
@@ -128,9 +129,11 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         flush_count = batch
         lports = []
         for i in range(lport_amount):
-            name = self.generate_random_name()
-            ip_addr = next(ip_addrs)
-            ip = str(ip_addr) if ip_addrs else ""
+            ip = str(next(ip_addrs)) if ip_addrs else ""
+            if len(ip):
+                name = "lp_%s" % ip
+            else:
+                name = self.generate_random_name()
             mac = utils.get_random_mac(base_mac)
             ip_mask = '{}/{}'.format(ip, network_cidr.prefixlen)
             lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name, mac,
@@ -180,7 +183,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
 
 
-    @atomic.action_timer("ovn.create_acl")
+    @atomic.optional_action_timer("ovn.create_acl")
     def _create_acl(self, lswitch, lports, acl_create_args, acls_per_port):
         sw = lswitch["name"]
         LOG.info("create %d ACLs on lswitch %s" % (acls_per_port, sw))
@@ -260,6 +263,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     def _create_routers(self, router_create_args):
         LOG.info("Create Logical routers")
         return super(OvnScenario, self)._create_routers(router_create_args)
+
+    @atomic.action_timer("ovn_network.delete_routers")
+    def _delete_routers(self):
+        LOG.info("Delete Logical routers")
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.enable_batch_mode(False)
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        for lrouter in ovn_nbctl.lrouter_list():
+            ovn_nbctl.lrouter_del(lrouter["name"])
 
     @atomic.action_timer("ovn_network.connect_network_to_router")
     def _connect_networks_to_routers(self, lnetworks, lrouters, networks_per_router):
@@ -349,10 +363,28 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         # on or at cleanup
         self.context["ovs-internal-ports"][port_name] = (lport, sandbox)
 
-    def _delete_ovs_internal_vm(self, lport, ovs_ssh, ovs_vsctl):
-        port_name = lport["name"]
+    def _delete_ovs_internal_vm(self, port_name, ovs_ssh, ovs_vsctl):
         ovs_vsctl.del_port(port_name)
         ovs_ssh.run('ip netns del {p}'.format(p=port_name))
+
+    def _flush_ovs_internal_ports(self, sandbox):
+        stdout = StringIO()
+        host_container = sandbox["host_container"]
+        sb_name = sandbox["name"]
+        farm = sandbox["farm"]
+
+        ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
+        ovs_vsctl.set_sandbox(sandbox, self.install_method, host_container)
+        ovs_vsctl.run("find interface type=internal", ["--bare", "--columns", "name"], stdout=stdout)
+        output = stdout.getvalue()
+
+        ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+        ovs_ssh.set_sandbox(sb_name, self.install_method, host_container)
+
+        for name in list(filter(None, output.splitlines())):
+            if "lp" not in name:
+                continue
+            self._delete_ovs_internal_vm(name, ovs_ssh, ovs_vsctl)
 
     def _cleanup_ovs_internal_ports(self, sandboxes):
         conns = {}
@@ -373,7 +405,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         for _, (lport, sandbox) in self.context["ovs-internal-ports"].items():
             sb_name = sandbox["name"]
             (ovs_ssh, ovs_vsctl) = conns[sb_name]
-            self._delete_ovs_internal_vm(lport, ovs_ssh, ovs_vsctl)
+            self._delete_ovs_internal_vm(lport["name"], ovs_ssh, ovs_vsctl)
 
         for _, (ovs_ssh, ovs_vsctl) in conns.items():
             ovs_vsctl.flush()
@@ -529,6 +561,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovn_nbctl.remove("Address_Set", name, ('addresses', ' ', addr_list))
         ovn_nbctl.flush()
 
+    def _list_address_set(self):
+        stdout = StringIO()
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl.run("list address_set", ["--bare", "--columns", "name"], stdout=stdout)
+        ovn_nbctl.flush()
+        output = stdout.getvalue()
+        return output.splitlines()
+
     def _remove_address_set(self, set_name):
         LOG.info("remove %s address_set" % set_name)
 
@@ -545,4 +588,5 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
                               self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
         return ovn_nbctl.get("Address_Set", set_name, 'addresses')

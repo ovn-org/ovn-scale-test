@@ -19,7 +19,6 @@ from io import StringIO
 from rally_ovs.plugins.ovs.ovsclients import *
 from rally_ovs.plugins.ovs.utils import get_ssh_from_credential
 
-
 @configure("ssh")
 class SshClient(OvsClient):
 
@@ -158,6 +157,16 @@ class OvnNbctl(OvsClient):
             self.run("ls-list", stdout=stdout)
             output = stdout.getvalue()
             return parse_lswitch_list(output)
+
+        def lrouter_list(self):
+            stdout = StringIO()
+            self.run("lr-list", stdout=stdout)
+            output = stdout.getvalue()
+            return parse_lswitch_list(output)
+
+        def lrouter_del(self, name):
+            params = [name]
+            self.run("lr-del", args=params)
 
         def lswitch_port_add(self, lswitch, name, mac='', ip=''):
             params =[lswitch, name]
@@ -458,7 +467,7 @@ class OvsVsctl(OvsClient):
             self.install_method = install_method
             self.host_container = host_container
 
-        def run(self, cmd, opts=[], args=[], extras=[]):
+        def run(self, cmd, opts=[], args=[], extras=[], stdout=sys.stdout, stderr=sys.stderr):
             self.cmds = self.cmds or []
 
             # TODO: tested with non batch_mode only for docker
@@ -485,8 +494,7 @@ class OvsVsctl(OvsClient):
             if self.batch_mode:
                 return
 
-            self.ssh.run("\n".join(self.cmds),
-                         stdout=sys.stdout, stderr=sys.stderr)
+            self.ssh.run("\n".join(self.cmds), stdout=stdout, stderr=stderr)
 
             self.cmds = None
 
