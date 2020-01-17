@@ -114,7 +114,7 @@ class OvnIGMP(ovn_network.OvnNetwork):
                     n=len(iterations), p=port_name))
 
         for expected_count, lport_map in iterations:
-            for port_name, port_groups in lport_map.iteritems():
+            for port_name, port_groups in lport_map.items():
                 _, sandbox = self.context["ovs-internal-ports"][port_name]
                 ovs_ssh = self._get_conn(sandbox["name"])
                 ovs_ssh.run(
@@ -204,6 +204,9 @@ class OvnIGMP(ovn_network.OvnNetwork):
                    cleanup=True,
                    igmp_args=None):
         sandboxes = self.context["sandboxes"]
+        if not sandboxes:
+            # when there is no sandbox specified, bind on all sandboxes.
+            sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
 
         lswitches = self._create_networks(network_create_args)
 

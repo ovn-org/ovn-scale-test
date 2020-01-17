@@ -60,6 +60,7 @@ class OvnSandboxFarmEngine(SandboxEngine):
         "properties": {
             "type": {"type": "string"},
             "deployment_name": {"type": "string"},
+            "host_container": {"type": "string"},
             "http_proxy": {"type": "string"},
             "https_proxy": {"type": "string"},
             "ovs_repo": {"type": "string"},
@@ -88,6 +89,8 @@ class OvnSandboxFarmEngine(SandboxEngine):
         dep_name = self.deployment["name"]
         LOG.info("Deploy farm node %s" % dep_name)
 
+        host_container = self.config.get("host_container", None)
+
         install_method = self.config.get("install_method", "sandbox")
         LOG.info("Farm install method: %s" % install_method)
         self._deploy(server, install_method)
@@ -103,7 +106,8 @@ class OvnSandboxFarmEngine(SandboxEngine):
 
         self.deployment.add_resource(dep_name,
                              ResourceType.SANDBOXES,
-                             info={"farm": dep_name, "sandboxes": []})
+                             info={"farm": dep_name, "sandboxes": [],
+                                   "host_container": host_container})
 
         return {"admin": None}
 
@@ -111,8 +115,10 @@ class OvnSandboxFarmEngine(SandboxEngine):
     def cleanup(self):
         """Cleanup OVN deployment."""
 
+        install_method = self.config.get("install_method", "sandbox")
+
         for resource in self.deployment.get_resources():
-            if resource["type"] == ResourceType.CREDENTIAL:
+            if install_method != "physical" and resource["type"] == ResourceType.CREDENTIAL:
                 server = provider.Server.from_credentials(resource.info)
 
                 cmd = "[ -x ovs-sandbox.sh ] && ./ovs-sandbox.sh --cleanup-all"

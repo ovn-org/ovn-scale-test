@@ -43,7 +43,8 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
 
         LOG.info("Create lswitches method: %s" % self.install_method)
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
@@ -81,7 +82,8 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         batch = router_create_args.get("batch", 1)
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
@@ -106,8 +108,8 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         LOG.info("Connect network %s to router %s" % (network["name"], router["name"]))
 
         ovn_nbctl = self.controller_client("ovn-nbctl")
-        install_method = self.install_method
-        ovn_nbctl.set_sandbox("controller-sandbox", install_method)
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
         ovn_nbctl.enable_batch_mode(False)
 
 

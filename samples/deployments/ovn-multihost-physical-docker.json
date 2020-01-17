@@ -1,0 +1,70 @@
+{
+    "controller": {
+        "controller_cidr": "10.19.188.192/23",
+        "deployment_name": "ovn-controller-node",
+        "install_method": "physical",
+        "host_container": "ovn-central",
+        "ovs_user": "root",
+        "provider": {
+            "credentials": [
+                {
+                    "host": "10.19.188.192",
+                    "user": "root"
+                }
+            ],
+            "type": "OvsSandboxProvider"
+        },
+        "type": "OvnSandboxControllerEngine"
+    },
+    "nodes": [
+        {
+            "deployment_name": "ovn-farm-node-0",
+            "install_method": "physical",
+            "host_container": "ovn-gw-1",
+            "ovs_user": "root",
+            "provider": {
+                "credentials": [
+                    {
+                        "host": "10.19.188.192",
+                        "user": "root"
+                    }
+                ],
+                "type": "OvsSandboxProvider"
+            },
+            "type": "OvnSandboxFarmEngine"
+        },
+        {
+            "deployment_name": "ovn-farm-node-1",
+            "install_method": "physical",
+            "host_container": "ovn-chassis-1",
+            "ovs_user": "root",
+            "provider": {
+                "credentials": [
+                    {
+                        "host": "10.19.188.192",
+                        "user": "root"
+                    }
+                ],
+                "type": "OvsSandboxProvider"
+            },
+            "type": "OvnSandboxFarmEngine"
+        },
+        {
+            "deployment_name": "ovn-farm-node-2",
+            "install_method": "physical",
+            "host_container": "ovn-chassis-2",
+            "ovs_user": "root",
+            "provider": {
+                "credentials": [
+                    {
+                        "host": "10.19.188.192",
+                        "user": "root"
+                    }
+                ],
+                "type": "OvsSandboxProvider"
+            },
+            "type": "OvnSandboxFarmEngine"
+        }
+    ],
+    "type": "OvnMultihostEngine"
+}

@@ -60,7 +60,7 @@ class OvnNorthbound(ovn.OvnScenario):
         for lswitch in lswitches:
             self._create_lports(lswitch, lport_create_args, lports_per_lswitch)
 
-        self._list_lports(lswitches, self.install_method)
+        self._list_lports(lswitches)
 
 
     @scenario.configure(context={})
