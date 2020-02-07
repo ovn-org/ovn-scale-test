@@ -40,6 +40,7 @@ class OvnNbctl(OvsClient):
             self.sandbox = None
             self.batch_mode = False
             self.cmds = None
+            self.socket = None
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -50,7 +51,11 @@ class OvnNbctl(OvsClient):
             self.install_method = install_method
             self.host_container = host_container
 
-        def run(self, cmd, opts=[], args=[], stdout=sys.stdout, stderr=sys.stderr):
+        def set_daemon_socket(self, socket=None):
+            self.socket = socket
+
+        def run(self, cmd, opts=[], args=[], stdout=sys.stdout,
+                stderr=sys.stderr, raise_on_error=True):
             self.cmds = self.cmds or []
 
             if self.batch_mode:
@@ -70,11 +75,19 @@ class OvnNbctl(OvsClient):
                     else:
                         cmd_prefix = ["sudo"]
 
-                cmd = itertools.chain(cmd_prefix, ["ovn-nbctl"], opts, [cmd], args)
+                if cmd == "exit":
+                    cmd_prefix.append("  ovs-appctl -t ")
+
+                if self.socket:
+                    ovn_cmd = "ovn-nbctl -u " + self.socket
+                else:
+                    ovn_cmd = "ovn-nbctl"
+
+                cmd = itertools.chain(cmd_prefix, [ovn_cmd], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
 
             self.ssh.run("\n".join(self.cmds),
-                         stdout=stdout, stderr=stderr)
+                         stdout=stdout, stderr=stderr, raise_on_error=raise_on_error)
 
             self.cmds = None
 
@@ -234,6 +247,16 @@ class OvnNbctl(OvsClient):
 
             self.run("sync", opts)
             self.batch_mode = batch_mode
+
+        def start_daemon(self):
+            stdout = StringIO()
+            opts = ["--detach",  "--pidfile", "--log-file"]
+            self.run("", opts=opts, stdout=stdout, raise_on_error=False)
+            return stdout.getvalue().rstrip()
+
+        def stop_daemon(self):
+            self.run("exit", raise_on_error=False)
+            self.socket = None
 
     def create_client(self):
         print("*********   call OvnNbctl.create_client")

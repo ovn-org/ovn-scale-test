@@ -25,6 +25,24 @@ LOG = logging.getLogger(__name__)
 
 
 class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
+    def _get_ovn_controller(self, install_method="sandbox"):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        return ovn_nbctl
+
+    def _start_daemon(self):
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
+        return ovn_nbctl.start_daemon()
+
+    def _stop_daemon(self):
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
+        ovn_nbctl.stop_daemon()
+
+    def _restart_daemon(self):
+        self._stop_daemon()
+        return self._start_daemon()
 
     def _create_lswitches(self, lswitch_create_args, num_switches=-1):
         self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
@@ -42,9 +60,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         mcast_table_size = lswitch_create_args.get("mcast_table_size", 2048)
 
         LOG.info("Create lswitches method: %s" % self.install_method)
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
@@ -81,9 +97,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         amount = router_create_args.get("amount", 1)
         batch = router_create_args.get("batch", 1)
 
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.enable_batch_mode()
 
         flush_count = batch
