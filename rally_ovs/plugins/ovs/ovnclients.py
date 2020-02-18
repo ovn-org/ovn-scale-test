@@ -67,6 +67,11 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         lswitches = []
         for i in range(num_switches):
             name = self.generate_random_name()
+            if start_cidr:
+                cidr = start_cidr.next(i)
+                name = "lswitch_%s" % cidr
+            else:
+                name = self.generate_random_name()
 
             other_cfg = {
                 'mcast_snoop': mcast_snoop,
@@ -76,7 +81,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
 
             lswitch = ovn_nbctl.lswitch_add(name, other_cfg)
             if start_cidr:
-                lswitch["cidr"] = start_cidr.next(i)
+                lswitch["cidr"] = cidr
 
             LOG.info("create %(name)s %(cidr)s" % \
                       {"name": name, "cidr": lswitch.get("cidr", "")})

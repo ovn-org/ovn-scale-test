@@ -1,0 +1,135 @@
+{% set farm_nodes = farm_nodes or 1 %}
+{% set networks = networks or 1 %}
+{% set ports_per_network = ports_per_network or 1 %}
+{
+    "version": 2,
+    "title": "OpenShift switch per node workload",
+    "subtasks": [
+        {
+            "title": "Delete sandbox all sandboxes with tag 'ToR1'",
+            "workloads": [{
+                "name": "OvnSandbox.delete_sandbox",
+                "args": {
+                    "sandbox_delete_args": {
+                        "graceful": false,
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": 1},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "Create sandboxes",
+            "workloads": [{
+                "name": "OvnSandbox.create_sandbox",
+                "args": {
+                    "sandbox_create_args": {
+                        "farm-prefix": "ovn-farm-node-",
+                        "amount": 1,
+                        "batch" : 1,
+                        "net_dev": "eth1",
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": {{farm_nodes}}},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "cleanup ovn osh configuration",
+            "workloads": [{
+                "name": "OvnNorthbound.cleanup_routed_lswitches",
+                "runner": {"type": "serial","times": 1},
+                "context": {
+                   "sandbox": {"tag": "ToR1"},
+                   "ovn_multihost" : {"controller": "ovn-controller-node"},
+                   "ovn_nb": {}
+                }
+            }]
+        },
+        {
+            "title": "Create switch-per-node scenario (setup workload)",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.create_routed_network",
+                    "args": {
+                        "lswitch_create_args": {
+                            "start_cidr": "1.0.0.0/16"
+                        },
+                        "lport_create_args": {
+                            "batch" : 1,
+                            "port_security" : true
+                        },
+                        "port_bind_args": {
+                            "internal" : true,
+                            "wait_up" : true,
+                            "batch" : false
+                        },
+                        "networks_per_router": {{networks}}
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": {{networks}}
+                    },
+                    "context": {
+                        "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": {"tag": "ToR1"},
+                        "datapath": {
+                            "router_create_args": {
+                                "amount": 1
+                            }
+                        },
+                        "ovn-nbctld" : {
+                            "daemon_mode": True
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Create switch-per-node scenario (add pods workload)",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.create_routed_lport",
+                    "args": {
+                        "lport_create_args": {
+                            "batch" : 1,
+                            "port_security" : true,
+                            "ip_offset" : 2
+                        },
+                        "port_bind_args": {
+                            "internal" : true,
+                            "wait_up" : true,
+                            "batch" : false
+                        },
+                        "address_set_size": 2,
+                        "create_acls": true
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": {{ports_per_network}}
+                    },
+                    "context": {
+                       "sandbox": {"tag": "ToR1"},
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                       },
+                       "ovn_nb": {},
+                       "ovn-nbctld" : {
+                            "daemon_mode": True
+                       }
+                    }
+                }
+            ]
+        }
+    ]
+}
