@@ -1,4 +1,4 @@
-# Copyright 2016 Ebay Inc.
+# Copyright 2020 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -17,36 +17,34 @@ from rally.common.i18n import _
 from rally.common import logging
 from rally import consts
 from rally.task import context
-from rally_ovs.plugins.ovs import ovsclients
+from rally_ovs.plugins.ovs import ovnclients
 
 LOG = logging.getLogger(__name__)
 
-
-@context.configure(name="ovn_nb", order=120)
-class OvnNorthboundContext(ovsclients.ClientsMixin, context.Context):
+@context.configure(name="ovn-nbctld", order=112)
+class OvnNbctlDaemonContext(ovnclients.OvnClientMixin, context.Context):
     CONFIG_SCHEMA = {
         "type": "object",
         "$schema": consts.JSON_SCHEMA,
         "properties": {
+            "daemon_mode": {"type": "boolean"},
         },
         "additionalProperties": True
     }
 
     DEFAULT_CONFIG = {
+        "daemon_mode": True,
     }
 
-    @logging.log_task_wrapper(LOG.info, _("Enter context: `ovn_nb`"))
+    @logging.log_task_wrapper(LOG.info, _("Enter context: `ovn-nbctld`"))
     def setup(self):
-        super(OvnNorthboundContext, self).setup()
+        super(OvnNbctlDaemonContext, self).setup()
 
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
-        lswitches = ovn_nbctl.show()
+        if self.config["daemon_mode"]:
+            self.context["daemon_socket"] = self._restart_daemon()
+        else:
+            self._stop_daemon()
 
-        self.context["ovn-nb"] = lswitches
-        self.context["ovs-internal-ports"] = {}
-
-    @logging.log_task_wrapper(LOG.info, _("Exit context: `ovn_nb`"))
+    @logging.log_task_wrapper(LOG.info, _("Exit context: `ovn-nbctld`"))
     def cleanup(self):
         pass

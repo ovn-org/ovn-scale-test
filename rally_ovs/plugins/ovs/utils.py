@@ -139,7 +139,8 @@ def get_sandboxes(deploy_uuid, farm="", tag=""):
             if tag and tag != v:
                 continue
 
-            sandbox = {"name": k, "tag": v, "farm": info["farm"]}
+            sandbox = {"name": k, "tag": v, "farm": info["farm"],
+                       "host_container": info["host_container"]}
             sandboxes.append(sandbox)
 
 

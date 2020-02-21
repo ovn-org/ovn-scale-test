@@ -70,7 +70,8 @@ class Sandbox(context.Context):
 
             for k,v in six.iteritems(info["sandboxes"]):
                 if tag == "all" or v == tag:
-                    sandbox = {"name": k, "tag": v, "farm": info["farm"]}
+                    sandbox = {"name": k, "tag": v, "farm": info["farm"],
+                               "host_container": info["host_container"]}
                     sandboxes.append(sandbox)
 
         self.context["sandboxes"] = sandboxes

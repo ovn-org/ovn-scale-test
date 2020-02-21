@@ -63,6 +63,7 @@ class OvnSandboxControllerEngine(SandboxEngine):
         "properties": {
             "type": {"type": "string"},
             "install_method": {"type": "string"},
+            "host_container": {"type": "string"},
             "deployment_name": {"type": "string"},
             "http_proxy": {"type": "string"},
             "https_proxy": {"type": "string"},
@@ -95,6 +96,8 @@ class OvnSandboxControllerEngine(SandboxEngine):
         if not deployment_name:
             deployment_name = self.config.get("deployment_name", None)
 
+        host_container = self.config.get("host_container", None)
+
         ovs_user = self.config.get("ovs_user", OVS_USER)
         ovs_controller_cidr = self.config.get("controller_cidr")
         net_dev = self.config.get("net_dev", "eth0")
@@ -114,7 +117,7 @@ class OvnSandboxControllerEngine(SandboxEngine):
             ovs_server.ssh.run(cmd,
                             stdout=sys.stdout, stderr=sys.stderr)
         else:
-            print "Invalid install method for controller"
+            print("Invalid install method for controller")
             exit(1)
 
         self.deployment.add_resource(provider_name="OvnSandboxControllerEngine",
@@ -125,7 +128,8 @@ class OvnSandboxControllerEngine(SandboxEngine):
                             type=ResourceType.CONTROLLER,
                             info={
                                   "ip":ovs_controller_cidr.split('/')[0],
-                                  "deployment_name":deployment_name})
+                                  "deployment_name":deployment_name,
+                                  "host_container":host_container})
 
         return {"admin": None}
 

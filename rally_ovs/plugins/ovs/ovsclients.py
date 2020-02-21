@@ -15,6 +15,8 @@
 import abc
 import collections
 import six
+import re
+import netaddr
 
 from rally.common.plugin import plugin
 from rally.task import scenario
@@ -139,8 +141,13 @@ def get_lswitch_info(info):
     for line in info.splitlines():
         tokens = line.strip().split(" ")
         if tokens[0] == "switch":
+            start_cidr = re.sub("\(lswitch_|\)", "", tokens[2])
+            if len(start_cidr):
+                cidr = netaddr.IPNetwork(start_cidr)
+            else:
+                cidr = ""
             name = tokens[2][1:-1]
-            lswitch = {"name":name, "uuid":tokens[1], "lports":[]}
+            lswitch = {"name":name, "uuid":tokens[1], "lports":[], "cidr":cidr}
             lswitches.append(lswitch)
         elif tokens[0] == "port":
             name = tokens[1][1:-1]

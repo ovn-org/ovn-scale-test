@@ -89,6 +89,7 @@ class Datapath(ovnclients.OvnClientMixin, context.Context):
             "routers": routers,
             "lswitches": lswitches,
         }
+        self.context["ovs-internal-ports"] = {}
 
     def cleanup(self):
         pass  # Not implemented

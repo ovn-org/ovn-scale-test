@@ -91,6 +91,9 @@ class OvnNetwork(ovn.OvnScenario):
                               internal_ports_cleanup=True):
 
         sandboxes = self.context["sandboxes"]
+        if not sandboxes:
+            # when there is no sandbox specified, bind on all sandboxes.
+            sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
 
         use_existing_networks = port_create_args. \
             get("use_existing_networks", False)

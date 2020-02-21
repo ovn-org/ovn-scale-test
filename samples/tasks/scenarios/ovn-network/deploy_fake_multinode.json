@@ -1,0 +1,186 @@
+{% set farm_nodes = farm_nodes or 1 %}
+{
+    "version": 2,
+    "title": "Create farm sandboxes",
+    "subtasks": [
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Create sandbox on farm {{i}}",
+            "workloads": [{
+                "name": "OvnSandbox.create_sandbox",
+                "args": {
+                    "sandbox_create_args": {
+                        "farm": "ovn-farm-node-{{i}}",
+                        "amount": 1,
+                        "batch" : 1,
+                        "start_cidr": "192.168.42.{{i + 10}}/24",
+                        "net_dev": "eth1",
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": 1},
+                "context": {
+                    "ovn_multihost": {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {% endfor %}
+        {
+            "title": "Deploy central node",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.add_central_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "node_net": "192.16.0.0",
+                            "node_net_len": "16",
+                            "node_ip": "192.16.1.2",
+                            "cluster_cmd_path": "/root/ovn-fake-multinode"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Deploy chassis nodes",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.add_chassis_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "farm": "ovn-farm-node-{{i}}",
+                            "node_net": "192.16.0.0",
+                            "node_net_len": "16",
+                            "node_ip": "192.16.{{(i+1)//256}}.{{(i+1)%256}}",
+                            "cluster_cmd_path": "/root/ovn-fake-multinode"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% endfor %}
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Connect chassis nodes",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.connect_chassis_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "farm": "ovn-farm-node-{{i}}",
+                            "central_ip": "192.16.1.2",
+                            "cluster_cmd_path": "/root/ovn-fake-multinode"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% endfor %}
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Wait chassis nodes",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.wait_chassis_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "farm": "ovn-farm-node-{{i}}",
+                            "max_timeout_s": 60
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% endfor %}
+        {% for i in range(0, farm_nodes) %}
+        {
+            "title": "Stop chassis nodes",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.del_chassis_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "farm": "ovn-farm-node-{{i}}",
+                            "cluster_cmd_path": "/root/ovn-fake-multinode"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% endfor %}
+        {
+            "title": "Stop central node",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.del_central_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "cluster_cmd_path": "/root/ovn-fake-multinode"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+    ]
+}

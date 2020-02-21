@@ -48,6 +48,7 @@ class OvnSandbox(sandbox.SandboxScenario):
         controller_cidr = config["controller"].get("controller_cidr", None)
         net_dev = config["controller"].get("net_dev", None)
         deployment_name = config["controller"].get("deployment_name")
+        host_container = config["controller"].get("host_container")
 
         controller_cidr = controller_create_args.get("controller_cidr",
                                                             controller_cidr)
@@ -59,7 +60,8 @@ class OvnSandbox(sandbox.SandboxScenario):
         if net_dev == None:
             raise NoSuchConfigField(name="net_dev")
 
-        self._create_controller(deployment_name, controller_cidr, net_dev)
+        self._create_controller(deployment_name, host_container,
+                                controller_cidr, net_dev)
 
 
 
