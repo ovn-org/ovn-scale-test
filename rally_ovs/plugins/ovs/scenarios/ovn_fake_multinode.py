@@ -70,9 +70,10 @@ class OvnFakeMultinode(ovn.OvnScenario):
         )
         ssh_conn.run(cmd)
 
-    def _connect_chassis(self, ssh_conn, node_name, central_ip, ovn_fake_path):
-        cmd = "cd {} && ./ovn_cluster.sh set-chassis-ovn-remote {} tcp:{}:6642".format(
-            ovn_fake_path, node_name, central_ip
+    def _connect_chassis(self, ssh_conn, node_name, central_ip, sb_proto,
+                         ovn_fake_path):
+        cmd = "cd {} && ./ovn_cluster.sh set-chassis-ovn-remote {} {}:{}:6642".format(
+            ovn_fake_path, node_name, sb_proto, central_ip
         )
         ssh_conn.run(cmd)
 
@@ -135,9 +136,11 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ssh = self._get_sandbox_conn(sb["name"], sb)
 
         central_ip = fake_multinode_args.get("central_ip")
+        sb_proto = fake_multinode_args.get("sb_proto", "ssl")
         node_name = sb["host_container"]
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
-        self._connect_chassis(ssh, node_name, central_ip, ovn_fake_path)
+        self._connect_chassis(ssh, node_name, central_ip, sb_proto,
+                              ovn_fake_path)
 
     @scenario.configure(context={})
     @atomic.action_timer("ovnFakeMultinode.wait_chassis_node")
@@ -208,6 +211,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
         node_prefix = fake_multinode_args.get("node_prefix", "")
 
         central_ip = fake_multinode_args.get("central_ip")
+        sb_proto = fake_multinode_args.get("sb_proto", "ssl")
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
 
         for i in range(batch_size):
@@ -218,7 +222,8 @@ class OvnFakeMultinode(ovn.OvnScenario):
             ssh = self._get_sandbox_conn(sb["name"], sb)
             node_name = sb["host_container"]
 
-            self._connect_chassis(ssh, node_name, central_ip, ovn_fake_path)
+            self._connect_chassis(ssh, node_name, central_ip, sb_proto,
+                                  ovn_fake_path)
 
     @scenario.configure(context={})
     @atomic.action_timer("ovnFakeMultinode.wait_chassis_nodes")
