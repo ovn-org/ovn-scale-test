@@ -28,6 +28,11 @@ class OvnNbctlDaemonContext(ovnclients.OvnClientMixin, context.Context):
         "$schema": consts.JSON_SCHEMA,
         "properties": {
             "daemon_mode": {"type": "boolean"},
+            "remote": {"type": "string"},
+            "prot": {"type": "string"},
+            "privkey": {"type": "string"},
+            "cert": {"type": "string"},
+            "cacert": {"type": "string"},
         },
         "additionalProperties": True
     }
@@ -41,7 +46,7 @@ class OvnNbctlDaemonContext(ovnclients.OvnClientMixin, context.Context):
         super(OvnNbctlDaemonContext, self).setup()
 
         if self.config["daemon_mode"]:
-            self.context["daemon_socket"] = self._start_daemon()
+            self.context["daemon_socket"] = self._start_daemon(self.config)
 
     @logging.log_task_wrapper(LOG.info, _("Exit context: `ovn-nbctld`"))
     def cleanup(self):

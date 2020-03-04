@@ -2,6 +2,8 @@
 {% set farm_nodes = farm_nodes or 1 %}
 {% set ports_per_network = ports_per_network or 1 %}
 {% set ovn_monitor_all = ovn_monitor_all or false %}
+{% set ovn_cluster_db = ovn_cluster_db or false %}
+{% set ovn_central_ip = ovn_central_ip or "192.16.0.1" %}
 {% set cluster_cmd_path = cluster_cmd_path or "/root/ovn-fake-testing/ovn-fake-multinode" %}
 {% set node_batch_size = node_batch_size or 1 %}
 {% set sla = sla or 30 %}
@@ -76,7 +78,8 @@
                     "name": "OvnFakeMultinode.del_central_node",
                     "args": {
                         "fake_multinode_args": {
-                            "cluster_cmd_path": {{cluster_cmd_path}}
+                            "cluster_cmd_path": {{cluster_cmd_path}},
+                            "ovn_cluster_db": {{ovn_cluster_db}}
                         }
                     },
                     "runner": {
@@ -138,7 +141,8 @@
                             "node_net_len": "16",
                             "node_ip": "192.16.0.1",
                             "cluster_cmd_path": {{cluster_cmd_path}},
-                            "ovn_monitor_all": {{ovn_monitor_all}}
+                            "ovn_monitor_all": {{ovn_monitor_all}},
+                            "ovn_cluster_db": {{ovn_cluster_db}}
                         }
                     },
                     "runner": {
@@ -164,9 +168,10 @@
                             "node_net": "192.16.0.0",
                             "node_net_len": "16",
                             "node_prefix": "ovn-farm-node-",
-                            "central_ip": "192.16.0.1",
+                            "central_ip": {{ovn_central_ip}},
                             "cluster_cmd_path": {{cluster_cmd_path}},
                             "ovn_monitor_all": {{ovn_monitor_all}},
+                            "ovn_cluster_db": {{ovn_cluster_db}},
                             "max_timeout_s": 10,
                             "batch_size": {{node_batch_size}}
                         },
@@ -203,7 +208,12 @@
                             }
                         },
                         "ovn-nbctld" : {
-                            "daemon_mode": True
+                            "daemon_mode": True,
+                            "remote": {{ovn_central_ip}},
+                            "prot": "ssl",
+                            "privkey": "/opt/ovn/ovn-privkey.pem",
+                            "cert": "/opt/ovn/ovn-cert.pem",
+                            "cacert": "/opt/ovn/pki/switchca/cacert.pem"
                         }
                     }
                 }
@@ -243,7 +253,12 @@
                        },
                        "ovn_nb": {},
                        "ovn-nbctld" : {
-                            "daemon_mode": True
+                            "daemon_mode": True,
+                            "remote": {{ovn_central_ip}},
+                            "prot": "ssl",
+                            "privkey": "/opt/ovn/ovn-privkey.pem",
+                            "cert": "/opt/ovn/ovn-cert.pem",
+                            "cacert": "/opt/ovn/pki/switchca/cacert.pem"
                        }
                     }
                 }
