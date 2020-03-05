@@ -192,11 +192,12 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         priority = acl_create_args.get("priority", 1000)
         action = acl_create_args.get("action", "allow")
         address_set = acl_create_args.get("address_set", "")
+        acl_type = acl_create_args.get("type", "switch")
 
         '''
         match template: {
             "direction" : "<inport/outport>",
-            "lport" : "<swicth port>",
+            "lport" : "<switch port>",
             "address_set" : "<address_set id>"
             "l4_port" : "<l4 port number>",
         }
@@ -220,7 +221,8 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                                            'lport' : lport["name"],
                                            'address_set' : address_set,
                                            'l4_port' : 100 + i }
-                ovn_nbctl.acl_add(sw, direction, priority, match, action)
+                ovn_nbctl.acl_add(sw, direction, priority, match, action,
+                                  entity = acl_type)
             ovn_nbctl.flush()
 
 
