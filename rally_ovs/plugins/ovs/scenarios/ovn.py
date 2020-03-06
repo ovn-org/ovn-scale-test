@@ -136,8 +136,9 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 name = self.generate_random_name()
             mac = utils.get_random_mac(base_mac)
             ip_mask = '{}/{}'.format(ip, network_cidr.prefixlen)
+            gw = str(self._get_gw_ip(network_cidr))
             lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name, mac,
-                                               ip_mask)
+                                               ip_mask, gw)
 
             ovn_nbctl.lport_set_addresses(name, [mac, ip])
             if port_security:

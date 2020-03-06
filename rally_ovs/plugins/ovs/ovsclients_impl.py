@@ -168,11 +168,11 @@ class OvnNbctl(OvsClient):
             params = [name]
             self.run("lr-del", args=params)
 
-        def lswitch_port_add(self, lswitch, name, mac='', ip=''):
+        def lswitch_port_add(self, lswitch, name, mac='', ip='', gw=''):
             params =[lswitch, name]
             self.run("lsp-add", args=params)
 
-            return {"name":name, "mac":mac, "ip":ip}
+            return {"name":name, "mac":mac, "ip":ip, "gw":gw}
 
 
         def lport_list(self, lswitch):
