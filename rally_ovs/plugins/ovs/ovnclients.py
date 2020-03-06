@@ -55,7 +55,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
 
-        mcast_snoop = lswitch_create_args.get("mcast_snoop", "true")
+        mcast_snoop = lswitch_create_args.get("mcast_snoop", "false")
         mcast_idle = lswitch_create_args.get("mcast_idle_timeout", 300)
         mcast_table_size = lswitch_create_args.get("mcast_table_size", 2048)
 
