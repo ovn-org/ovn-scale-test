@@ -186,7 +186,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     @atomic.optional_action_timer("ovn.create_acl")
     def _create_acl(self, lswitch, lports, acl_create_args, acls_per_port):
         sw = lswitch["name"]
-        LOG.info("create %d ACLs on lswitch %s" % (acls_per_port, sw))
+        LOG.info("create %d ACLs on %s" % (acls_per_port, sw))
 
         direction = acl_create_args.get("direction", "to-lport")
         priority = acl_create_args.get("priority", 1000)
@@ -197,7 +197,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         '''
         match template: {
             "direction" : "<inport/outport>",
-            "lport" : "<switch port>",
+            "lport" : "<switch port or port-group>",
             "address_set" : "<address_set id>"
             "l4_port" : "<l4 port number>",
         }
@@ -260,6 +260,32 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         if flush:
             ovn_nbctl.flush()
 
+    @atomic.optional_action_timer("ovn.pg-add")
+    def _port_group_add(self, port_group, port_list):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        LOG.info("create %s port_group [%s]" % (port_group, port_list))
+        ovn_nbctl.port_group_add(port_group, port_list)
+
+    @atomic.optional_action_timer("ovn.pg-set")
+    def _port_group_set(self, port_group, port_list):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        LOG.info("Add %s to port_group %s" % (port_list, port_group))
+        ovn_nbctl.port_group_set(port_group, port_list)
+
+    @atomic.optional_action_timer("ovn.pg-del")
+    def _port_group_del(self, port_group):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        LOG.info("Delete %s port_group" % port_group)
+        ovn_nbctl.port_group_del(port_group, port_list)
 
     @atomic.action_timer("ovn_network.create_routers")
     def _create_routers(self, router_create_args):
