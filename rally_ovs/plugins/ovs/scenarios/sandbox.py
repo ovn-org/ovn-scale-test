@@ -114,7 +114,7 @@ class SandboxScenario(scenario.OvsScenario):
         ssh.run("\n".join(cmds), stdout=sys.stdout, stderr=sys.stderr);
 
 
-    def _create_sandbox(self, sandbox_create_args):
+    def _create_sandbox(self, sandbox_create_args, farm=None):
         """
         :param sandbox_create_args from task config file
         """
@@ -124,7 +124,8 @@ class SandboxScenario(scenario.OvsScenario):
         amount = sandbox_create_args.get("amount", 1)
         batch = sandbox_create_args.get("batch", 1)
 
-        farm = sandbox_create_args.get("farm")
+        if not farm:
+            farm = sandbox_create_args.get("farm")
         controller_ip = self.context["controller"]["ip"]
 
         start_cidr = sandbox_create_args.get("start_cidr")
