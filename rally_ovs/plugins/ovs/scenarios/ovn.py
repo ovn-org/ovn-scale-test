@@ -21,6 +21,7 @@ from rally_ovs.plugins.ovs import utils
 import copy
 import random
 import netaddr
+from datetime import datetime
 from io import StringIO
 
 LOG = logging.getLogger(__name__)
@@ -360,16 +361,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         # "wait_sync" takes effect only if wait_up is True.
         # By default we wait for all HVs catching up with the change.
         wait_sync = port_bind_args.get("wait_sync", "hv")
-        if wait_sync.lower() not in ['hv', 'sb', 'none']:
+        if wait_sync.lower() not in ['hv', 'sb', 'ping', 'none']:
             raise exceptions.InvalidConfigException(_(
                 "Unknown value for wait_sync: %s. "
                 "Only 'hv', 'sb' and 'none' are allowed.") % wait_sync)
+        wait_timeout_s = port_bind_args.get("wait_timeout_s", 20)
 
         LOG.info("Bind lports method: %s" % self.install_method)
 
         self._bind_ports(lports, sandboxes, port_bind_args)
         if wait_up:
-            self._wait_up_port(lports, wait_sync)
+            self._wait_up_port(lports, wait_sync, wait_timeout_s)
 
     @atomic.action_timer("ovn.bind_ovs_vm")
     def _bind_ovs_port(self, lport, ovs_vsctl, internal=True):
@@ -515,20 +517,58 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                     ovs_ssh.flush()
                 j += 1
 
-    @atomic.action_timer("ovn_network.wait_port_up")
-    def _wait_up_port(self, lports, wait_sync):
-        LOG.info("wait port up. sync: %s" % wait_sync)
-        ovn_nbctl = self._get_ovn_controller(self.install_method)
-        ovn_nbctl.enable_batch_mode()
+    def _ping_port(self, lport, wait_timeout_s):
+        _, sandbox = self.context["ovs-internal-ports"][lport["name"]]
+        ovs_ssh = self.farm_clients(sandbox["farm"], "ovs-ssh")
+        ovs_ssh.set_sandbox(sandbox, self.install_method,
+                            sandbox['host_container'])
+        ovs_ssh.enable_batch_mode(False)
 
+        start_time = datetime.now()
+        while True:
+            try:
+                ovs_ssh.run("ip netns exec {} ping -q -c 1 -W 0.1 {}".format(
+                                lport["name"], lport["gw"]))
+                break
+            except:
+                pass
+
+            if (datetime.now() - start_time).seconds > wait_timeout_s:
+                LOG.info("Timeout waiting for port {} to be able to ping gateway {}".format(
+                        lport["name"], lport["gw"]))
+                raise exceptions.ThreadTimeoutException()
+
+    @atomic.action_timer("ovn_network.wait_port_lsp_up")
+    def _wait_up_port_lsp(self, lports, ovn_nbctl):
         for index, lport in enumerate(lports):
-            ovn_nbctl.wait_until('Logical_Switch_Port', lport["name"], ('up', 'true'))
+            ovn_nbctl.wait_until('Logical_Switch_Port', lport["name"],
+                                 ('up', 'true'))
             if index % 400 == 0:
                 ovn_nbctl.flush()
+        ovn_nbctl.flush()
 
-        if wait_sync != "none":
-            ovn_nbctl.sync(wait_sync)
-        ovn_nbctl.enable_batch_mode(False)
+    @atomic.action_timer("ovn_network.wait_port_ping")
+    def _wait_up_port_ping(self, lports, wait_timeout_s):
+        for lport in lports:
+            self._ping_port(lport, wait_timeout_s)
+
+    @atomic.action_timer("ovn_network.wait_port_sync")
+    def _wait_up_port_sync(self, wait_sync, ovn_nbctl):
+        ovn_nbctl.sync(wait_sync)
+
+    def _wait_up_port(self, lports, wait_sync, wait_timeout_s):
+        LOG.info("wait port up. sync: %s" % wait_sync)
+
+        if wait_sync == 'ping':
+            self._wait_up_port_ping(lports, wait_timeout_s)
+        else:
+            ovn_nbctl = self._get_ovn_controller(self.install_method)
+            ovn_nbctl.enable_batch_mode()
+            self._wait_up_port_lsp(lports, ovn_nbctl)
+            if wait_sync != 'none':
+                self._wait_up_port_sync(wait_sync, ovn_nbctl)
+            ovn_nbctl.flush()
+            ovn_nbctl.enable_batch_mode(False)
 
     @atomic.action_timer("ovn_network.list_oflow_count_for_sandboxes")
     def _list_oflow_count_for_sandboxes(self, sandboxes,
