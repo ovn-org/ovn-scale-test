@@ -1,0 +1,253 @@
+{% set max_farm_nodes = max_farm_nodes or 1 %}
+{% set farm_nodes = farm_nodes or 1 %}
+{% set ports_per_network = ports_per_network or 1 %}
+{% set ovn_monitor_all = ovn_monitor_all or false %}
+{% set cluster_cmd_path = cluster_cmd_path or "/root/ovn-fake-testing/ovn-fake-multinode" %}
+{% set node_batch_size = node_batch_size or 1 %}
+{% set sla = sla or 30 %}
+{
+    "version": 2,
+    "title": "Switch per node workload",
+    "subtasks": [
+        {
+            "title": "Delete sandbox all sandboxes with tag 'ToR1'",
+            "workloads": [{
+                "name": "OvnSandbox.delete_sandbox",
+                "args": {
+                    "sandbox_delete_args": {
+                        "graceful": false,
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": 1},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "Create sandboxes",
+            "workloads": [{
+                "name": "OvnSandbox.create_sandbox",
+                "args": {
+                    "sandbox_create_args": {
+                        "farm-prefix": "ovn-farm-node-",
+                        "amount": 1,
+                        "batch" : 1,
+                        "net_dev": "eth1",
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": {{max_farm_nodes}}},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "Delete all chassis nodes",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.del_chassis_nodes",
+                    "args": {
+                        "fake_multinode_args": {
+                            "node_prefix": "ovn-farm-node-",
+                            "cluster_cmd_path": {{cluster_cmd_path}}
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": {{max_farm_nodes}}
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "ovn_nb": {},
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Delete central node",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.del_central_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "cluster_cmd_path": {{cluster_cmd_path}}
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Delete sandbox all sandboxes with tag 'ToR1'",
+            "workloads": [{
+                "name": "OvnSandbox.delete_sandbox",
+                "args": {
+                    "sandbox_delete_args": {
+                        "graceful": false,
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": 1},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "Create sandboxes",
+            "workloads": [{
+                "name": "OvnSandbox.create_sandbox",
+                "args": {
+                    "sandbox_create_args": {
+                        "farm-prefix": "ovn-farm-node-",
+                        "amount": 1,
+                        "batch" : 1,
+                        "net_dev": "eth1",
+                        "tag": "ToR1"
+                    }
+                },
+                "runner": {"type": "serial", "times": {{farm_nodes}}},
+                "context": {
+                    "ovn_multihost" : {"controller": "ovn-controller-node"}
+                }
+            }]
+        },
+        {
+            "title": "Deploy central node",
+            "workloads": [
+                {
+                    "name": "OvnFakeMultinode.add_central_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "node_net": "192.16.0.0",
+                            "node_net_len": "16",
+                            "node_ip": "192.16.0.1",
+                            "cluster_cmd_path": {{cluster_cmd_path}},
+                            "ovn_monitor_all": {{ovn_monitor_all}}
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Create switch-per-node scenario (setup workload)",
+            "workloads": [
+                {
+                    "name": "OvnNorthboundFakeMultinode.setup_switch_per_node",
+                    "args": {
+                        "fake_multinode_args": {
+                            "node_net": "192.16.0.0",
+                            "node_net_len": "16",
+                            "node_prefix": "ovn-farm-node-",
+                            "central_ip": "192.16.0.1",
+                            "cluster_cmd_path": {{cluster_cmd_path}},
+                            "ovn_monitor_all": {{ovn_monitor_all}},
+                            "max_timeout_s": 10,
+                            "batch_size": {{node_batch_size}}
+                        },
+                        "lswitch_create_args": {
+                            "start_cidr": "1.0.0.0/16"
+                        },
+                        "lport_create_args": {
+                            "port_security" : true
+                        },
+                        "port_bind_args": {
+                            "internal" : true,
+                            "wait_up" : true,
+                            "wait_sync" : "ping",
+                            "batch" : false
+                        },
+                        "networks_per_router": {{farm_nodes}}
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": {{farm_nodes // node_batch_size}}
+                    },
+                    "sla": {
+                        "max_seconds_per_iteration": {{sla}}
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "ovn_nb": {},
+                        "sandbox": { "tag": "ToR1" },
+                        "datapath": {
+                            "router_create_args": {
+                                "amount": 1
+                            }
+                        },
+                        "ovn-nbctld" : {
+                            "daemon_mode": True
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Create switch-per-node scenario (add pods workload)",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.create_routed_lport",
+                    "args": {
+                        "lport_create_args": {
+                            "batch" : 1,
+                            "port_security" : true,
+                            "ip_offset" : 2
+                        },
+                        "port_bind_args": {
+                            "internal" : true,
+                            "wait_up" : true,
+                            "wait_sync" : "ping",
+                            "batch" : false
+                        },
+                        "create_acls": true
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": {{ports_per_network}}
+                    },
+                    "sla": {
+                        "max_seconds_per_iteration": {{sla}}
+                    },
+                    "context": {
+                       "sandbox": {"tag": "ToR1"},
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                       },
+                       "ovn_nb": {},
+                       "ovn-nbctld" : {
+                            "daemon_mode": True
+                       }
+                    }
+                }
+            ]
+        }
+    ]
+}
