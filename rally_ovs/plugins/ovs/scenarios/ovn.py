@@ -30,13 +30,20 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
     def __init__(self, context=None):
         super(OvnScenario, self).__init__(context)
-        self._init_conns(self.context)
-    
-    def _init_conns(self, context):
-        self._ssh_conns = {}
+        self._ssh_conns = None
+
+    def __del__(self):
+        if self._ssh_conns:
+            self._ssh_conns.clear()
+
+    def _build_conn_hash(self, context):
+        if not self._ssh_conns is None:
+            return
 
         if not context:
             return
+
+        self._ssh_conns = {}
 
         for sandbox in context["sandboxes"]:
             sb_name = sandbox["name"]
@@ -48,9 +55,13 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             self._ssh_conns[sb_name] = ovs_ssh
 
     def _get_conn(self, sb_name):
+        self._build_conn_hash(self.context)
         return self._ssh_conns[sb_name]
 
     def _flush_conns(self, cmds=[]):
+        if self._ssh_conns is None:
+            return
+
         for _, ovs_ssh in self._ssh_conns.items():
             for cmd in cmds:
                 ovs_ssh.run(cmd)
