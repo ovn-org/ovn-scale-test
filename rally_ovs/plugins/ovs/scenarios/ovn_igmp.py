@@ -224,8 +224,9 @@ class OvnIGMP(ovn_network.OvnNetwork):
             self._cleanup_mcast_tests()
 
         for lswitch in lswitches:
-            switch_lports = self._create_lports(lswitch, port_create_args,
-                                                ports_per_network)
+            switch_lports = self._create_switch_lports(lswitch,
+                                                       port_create_args,
+                                                       ports_per_network)
             lports_per_lswitch[lswitch["name"]] = switch_lports
             lports += switch_lports
 

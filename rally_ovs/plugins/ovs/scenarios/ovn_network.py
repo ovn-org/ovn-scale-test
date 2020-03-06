@@ -74,11 +74,10 @@ class OvnNetwork(ovn.OvnScenario):
             # when there is no sandbox specified, bind on all sandboxes.
             sandboxes = utils.get_sandboxes(self.task["deployment_uuid"])
 
-        for network in lnetworks:
-            lports = self._create_lports(network, port_create_args, ports_per_network)
-            if (len(lports) < len(sandboxes)):
-                LOG.warn("Number of ports less than chassis: random binding\n")
-            self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
+        lports = self._create_lports(lnetworks, port_create_args, ports_per_network)
+        if (len(lports) < len(sandboxes)):
+            LOG.warn("Number of ports less than chassis: random binding\n")
+        self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
 
 
     @validation.number("ports_per_network", minval=1, integer_only=True)
@@ -109,11 +108,8 @@ class OvnNetwork(ovn.OvnScenario):
                     if start_cidr:
                         lswitches[i]["cidr"] = start_cidr.next(i)
 
-        lports = []
-
-        for lswitch in lswitches:
-            lports += self._create_lports(lswitch, port_create_args, ports_per_network)
-
+        lports = self._create_lports(lswitches, port_create_args,
+                                     ports_per_network)
         self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
 
         if internal_ports_cleanup:

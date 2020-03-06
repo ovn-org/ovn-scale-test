@@ -98,8 +98,15 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         pass
 
     @atomic.action_timer("ovn.create_lport")
-    def _create_lports(self, lswitch, lport_create_args = [], lport_amount=1,
-                       lport_ip_shift = 1):
+    def _create_lports(self, lswitches, lport_create_args = [], lport_amount=1,
+                       lport_ip_shift=1):
+        lports = []
+        for lswitch in lswitches:
+            lports += self._create_switch_lports(lswitch, lport_create_args)
+        return lports
+
+    def _create_switch_lports(self, lswitch, lport_create_args = [],
+                              lport_amount=1, lport_ip_shift = 1):
         LOG.info("create %d lports on lswitch %s" % \
                             (lport_amount, lswitch["name"]))
 
@@ -337,10 +344,11 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         sandboxes = self.context["sandboxes"]
 
         lswitch_args = copy.copy(lswitch_create_args)
+        amount = lswitch_create_args.get('amount', 1)
         start_cidr = lswitch_create_args.get("start_cidr", "")
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
-            cidr = start_cidr.next(iteration)
+            cidr = start_cidr.next(iteration * amount)
             lswitch_args["start_cidr"] = str(cidr)
         lswitches = self._create_lswitches(lswitch_args)
 
@@ -351,9 +359,12 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         if create_mgmt_port == False:
             return
 
-        sandbox = sandboxes[iteration % len(sandboxes)]
-        lport = self._create_lports(lswitches[0], lport_create_args)
-        self._bind_ports_and_wait(lport, [sandbox], port_bind_args)
+        sandboxes = [
+            sandboxes[i % len(sandboxes)]
+                for i in range(iteration * amount, (iteration + 1) * amount)
+        ]
+        lports = self._create_lports(lswitches, lport_create_args)
+        self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
 
     def _bind_ports_and_wait(self, lports, sandboxes, port_bind_args):
         port_bind_args = port_bind_args or {}
@@ -374,45 +385,59 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             self._wait_up_port(lports, wait_sync, wait_timeout_s)
 
     @atomic.action_timer("ovn.bind_ovs_vm")
-    def _bind_ovs_port(self, lport, ovs_vsctl, internal=True):
-        port_name = lport["name"]
-        LOG.info("bind %s to %s on %s" % (port_name, sb_name, farm))
+    def _bind_ovs_port(self, lport_sbs, internal=True):
+        for sb_name, (sandbox, lports) in lport_sbs.items():
+            farm = sandbox['farm']
+            ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
+            ovs_vsctl.set_sandbox(sb_name, self.install_method,
+                                  sandbox['host_container'])
+            for lport in lports:
+                port_name = lport["name"]
+                LOG.info("bind %s to %s on %s" % (port_name, sb_name, farm))
 
-        ovs_vsctl.add_port('br-int', port_name, internal=internal)
-        ovs_vsctl.db_set('Interface', port_name,
-                        ('external_ids', {"iface-id":port_name,
-                                            "iface-status":"active"}),
-                        ('admin_state', 'up'))
+                ovs_vsctl.add_port('br-int', port_name, internal=internal)
+                ovs_vsctl.db_set('Interface', port_name,
+                                ('external_ids', {"iface-id":port_name,
+                                                  "iface-status":"active"}),
+                                ('admin_state', 'up'))
+            ovs_vsctl.flush()
 
     @atomic.action_timer("ovn.bind_internal_vm")
-    def _bind_ovs_internal_vm(self, lport, sandbox, ovs_ssh):
-        port_name = lport["name"]
-        port_mac = lport["mac"]
-        port_ip = lport["ip"]
-        # TODO: some containers don't have ethtool installed
-        if not sandbox["host_container"]:
-            # Disable tx offloading on the port
-            ovs_ssh.run('ethtool -K {p} tx off &> /dev/null'.format(p=port_name))
-        ovs_ssh.run('ip netns add {p}'.format(p=port_name))
-        ovs_ssh.run('ip link set {p} netns {p}'.format(p=port_name))
-        ovs_ssh.run('ip netns exec {p} ip link set {p} address {m}'.format(
-            p=port_name, m=port_mac)
-        )
-        ovs_ssh.run('ip netns exec {p} ip addr add {ip} dev {p}'.format(
-            p=port_name, ip=port_ip)
-        )
-        ovs_ssh.run('ip netns exec {p} ip link set {p} up'.format(
-            p=port_name)
-        )
+    def _bind_ovs_internal_vm(self, lport_sbs):
+        for sb_name, (sandbox, lports) in lport_sbs.items():
+            farm = sandbox['farm']
+            ovs_ssh = self.farm_clients(farm, "ovs-ssh")
+            ovs_ssh.set_sandbox(sb_name, self.install_method,
+                                sandbox['host_container'])
+            for lport in lports:
+                port_name = lport["name"]
+                port_mac = lport["mac"]
+                port_ip = lport["ip"]
+                # TODO: some containers don't have ethtool installed
+                if not sandbox["host_container"]:
+                    # Disable tx offloading on the port
+                    ovs_ssh.run('ethtool -K {p} tx off &> /dev/null'.format(p=port_name))
+                ovs_ssh.run('ip netns add {p}'.format(p=port_name))
+                ovs_ssh.run('ip link set {p} netns {p}'.format(p=port_name))
+                ovs_ssh.run('ip netns exec {p} ip link set {p} address {m}'.format(
+                    p=port_name, m=port_mac)
+                )
+                ovs_ssh.run('ip netns exec {p} ip addr add {ip} dev {p}'.format(
+                    p=port_name, ip=port_ip)
+                )
+                ovs_ssh.run('ip netns exec {p} ip link set {p} up'.format(
+                    p=port_name)
+                )
 
-        # Add route for multicast traffic
-        ovs_ssh.run('ip netns exec {p} ip route add 224/4 dev {p}'.format(
-            p=port_name)
-        )
+                # Add route for multicast traffic
+                ovs_ssh.run('ip netns exec {p} ip route add 224/4 dev {p}'.format(
+                    p=port_name)
+                )
+                ovs_ssh.flush()
 
-        # Store the port in the context so we can use its information later
-        # on or at cleanup
-        self.context["ovs-internal-ports"][port_name] = (lport, sandbox)
+                # Store the port in the context so we can use its information later
+                # on or at cleanup
+                self.context["ovs-internal-ports"][port_name] = (lport, sandbox)
 
     def _delete_ovs_internal_vm(self, port_name, ovs_ssh, ovs_vsctl):
         ovs_vsctl.del_port(port_name)
@@ -465,57 +490,32 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     @atomic.action_timer("ovn_network.bind_port")
     def _bind_ports(self, lports, sandboxes, port_bind_args):
         internal = port_bind_args.get("internal", False)
+        batch = port_bind_args.get("batch", True)
         sandbox_num = len(sandboxes)
         lport_num = len(lports)
         lport_per_sandbox = int((lport_num + sandbox_num - 1) / sandbox_num)
 
-        if (len(lports) < len(sandboxes)):
+        lport_sbs = {}
+        if len(lports) < len(sandboxes):
             for lport in lports:
-                sandbox_data = random.choice(sandboxes)
-                farm = sandbox_data['farm']
-                sandbox = sandbox_data['name']
-                ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-
-                ovs_vsctl.set_sandbox(sandbox, self.install_method,
-                                      sandbox_data['host_container'])
-                ovs_vsctl.enable_batch_mode()
-                self._bind_ovs_port(lport, ovs_vsctl, internal)
-                ovs_vsctl.flush()
-
-                # If it's an internal port create a "fake vm"
-                if internal:
-                    ovs_ssh = self.farm_clients(farm, "ovs-ssh")
-                    self._bind_ovs_internal_vm(lport, sandbox_data, ovs_ssh)
-                    ovs_ssh.flush()
-
+                sandbox = random.choice(sandboxes)
+                sb_name = sandbox['name']
+                _, lports_sb = lport_sbs.get(sb_name, (sandbox, []))
+                lport_sbs[sb_name] = (sandbox, lports_sb + [lport])
         else:
             j = 0
-            for i in range(0, len(lports), lport_per_sandbox):
-                lport_slice = lports[i:i+lport_per_sandbox]
-
-                sandbox = sandboxes[j]["name"]
-                farm = sandboxes[j]["farm"]
-                ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
-                ovs_vsctl.set_sandbox(sandbox, self.install_method,
-                                      sandboxes[j]["host_container"])
-                ovs_vsctl.enable_batch_mode()
+            for i in range(j * lport_per_sandbox, len(lports), lport_per_sandbox):
+                lport_slice = lports[i : i + lport_per_sandbox]
                 for index, lport in enumerate(lport_slice):
-                    self._bind_ovs_port(lport, ovs_vsctl, internal)
-                    if index % 400 == 0:
-                        ovs_vsctl.flush()
-                ovs_vsctl.flush()
-
-                # If it's an internal port create a "fake vm"
-                if internal:
-                    ovs_ssh = self.farm_clients(farm, "ovs-ssh")
-                    ovs_ssh.enable_batch_mode()
-
-                    for index, lport in enumerate(lport_slice):
-                        self._bind_ovs_internal_vm(lport, sandboxes[j], ovs_ssh)
-                        if index % 200 == 0:
-                            ovs_ssh.flush()
-                    ovs_ssh.flush()
+                    sandbox = sandboxes[j]
+                    sb_name = sandbox['name']
+                    _, lports_sb = lport_sbs.get(sb_name, (sandbox, []))
+                    lport_sbs[sb_name] = (sandbox, lports_sb + [lport])
                 j += 1
+
+        self._bind_ovs_port(lport_sbs, internal)
+        if internal:
+            self._bind_ovs_internal_vm(lport_sbs)
 
     def _ping_port(self, lport, wait_timeout_s):
         _, sandbox = self.context["ovs-internal-ports"][lport["name"]]
