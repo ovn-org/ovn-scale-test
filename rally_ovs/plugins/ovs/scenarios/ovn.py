@@ -371,6 +371,18 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         if wait_up:
             self._wait_up_port(lports, wait_sync)
 
+    @atomic.action_timer("ovn.bind_ovs_vm")
+    def _bind_ovs_port(self, lport, ovs_vsctl, internal=True):
+        port_name = lport["name"]
+        LOG.info("bind %s to %s on %s" % (port_name, sb_name, farm))
+
+        ovs_vsctl.add_port('br-int', port_name, internal=internal)
+        ovs_vsctl.db_set('Interface', port_name,
+                        ('external_ids', {"iface-id":port_name,
+                                            "iface-status":"active"}),
+                        ('admin_state', 'up'))
+
+    @atomic.action_timer("ovn.bind_internal_vm")
     def _bind_ovs_internal_vm(self, lport, sandbox, ovs_ssh):
         port_name = lport["name"]
         port_mac = lport["mac"]
@@ -465,16 +477,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 ovs_vsctl.set_sandbox(sandbox, self.install_method,
                                       sandbox_data['host_container'])
                 ovs_vsctl.enable_batch_mode()
-                port_name = lport["name"]
-                port_mac = lport["mac"]
-                port_ip = lport["ip"]
-                LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
-
-                ovs_vsctl.add_port('br-int', port_name, internal=internal)
-                ovs_vsctl.db_set('Interface', port_name,
-                                 ('external_ids', {"iface-id": port_name,
-                                                   "iface-status": "active"}),
-                                 ('admin_state', 'up'))
+                self._bind_ovs_port(lport, ovs_vsctl, internal)
                 ovs_vsctl.flush()
 
                 # If it's an internal port create a "fake vm"
@@ -495,15 +498,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                                       sandboxes[j]["host_container"])
                 ovs_vsctl.enable_batch_mode()
                 for index, lport in enumerate(lport_slice):
-                    port_name = lport["name"]
-
-                    LOG.info("bind %s to %s on %s" % (port_name, sandbox, farm))
-
-                    ovs_vsctl.add_port('br-int', port_name, internal=internal)
-                    ovs_vsctl.db_set('Interface', port_name,
-                                     ('external_ids', {"iface-id":port_name,
-                                                       "iface-status":"active"}),
-                                     ('admin_state', 'up'))
+                    self._bind_ovs_port(lport, ovs_vsctl, internal)
                     if index % 400 == 0:
                         ovs_vsctl.flush()
                 ovs_vsctl.flush()
