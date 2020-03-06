@@ -18,6 +18,7 @@ from rally.common import logging
 from rally import exceptions
 from rally_ovs.plugins.ovs import ovnclients
 from rally_ovs.plugins.ovs import utils
+import copy
 import random
 import netaddr
 from io import StringIO
@@ -356,6 +357,34 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             self._create_phynet(lswitches, physnet, batch)
 
         return lswitches
+
+    def _create_routed_network(self, lswitch_create_args = {},
+                               networks_per_router = {},
+                               lport_create_args = {},
+                               port_bind_args = {},
+                               create_mgmt_port = True):
+        lrouters = self.context["datapaths"]["routers"]
+        iteration = self.context["iteration"]
+        sandboxes = self.context["sandboxes"]
+
+        lswitch_args = copy.copy(lswitch_create_args)
+        start_cidr = lswitch_create_args.get("start_cidr", "")
+        if start_cidr:
+            start_cidr = netaddr.IPNetwork(start_cidr)
+            cidr = start_cidr.next(iteration)
+            lswitch_args["start_cidr"] = str(cidr)
+        lswitches = self._create_lswitches(lswitch_args)
+
+        if networks_per_router:
+            self._connect_networks_to_routers(lswitches, lrouters,
+                                              networks_per_router)
+
+        if create_mgmt_port == False:
+            return
+
+        sandbox = sandboxes[iteration % len(sandboxes)]
+        lport = self._create_lports(lswitches[0], lport_create_args)
+        self._bind_ports_and_wait(lport, [sandbox], port_bind_args)
 
     def _bind_ports_and_wait(self, lports, sandboxes, port_bind_args):
         port_bind_args = port_bind_args or {}
