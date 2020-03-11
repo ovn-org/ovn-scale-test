@@ -118,6 +118,25 @@ class OvnFakeMultinode(ovn.OvnScenario):
         )
         ssh_conn.run(cmd)
 
+    def _add_chassis_external_host(self, ssh_conn, ext_host_cidr):
+        gw_ip = self._get_gw_ip(ext_host_cidr, 1)
+        host_ip = self._get_gw_ip(ext_host_cidr, 2)
+
+        ssh_conn.enable_batch_mode()
+        ssh_conn.run("ip link add veth0 type veth peer name veth1")
+        ssh_conn.run("ip netns add ext-ns")
+        ssh_conn.run("ip link set netns ext-ns dev veth0")
+        ssh_conn.run("ip netns exec ext-ns ip link set dev veth0 up")
+        ssh_conn.run("ip netns exec ext-ns ip addr add {}/{} dev veth0".format(
+                host_ip, ext_host_cidr.prefixlen))
+        ssh_conn.run("ip netns exec ext-ns ip route add default via {}".format(
+                gw_ip))
+        ssh_conn.run("ip link set dev veth1 up")
+        ssh_conn.run("ovs-vsctl add-port br-ex veth1")
+
+        ssh_conn.flush()
+        ssh_conn.enable_batch_mode(False)
+
     @scenario.configure(context={})
     @atomic.action_timer("OvnFakeMultinode.add_central_node")
     def add_central_node(self, fake_multinode_args = {}):
@@ -320,6 +339,24 @@ class OvnFakeMultinode(ovn.OvnScenario):
 
             self._add_chassis_localnet(ssh, physnet)
 
+    @scenario.configure(context={})
+    @atomic.action_timer("OvnFakeMultinode.add_chassis_external_hosts")
+    def add_chassis_external_hosts(self, fake_multinode_args = {},
+                                   lnetwork_create_args = {}):
+        iteration = self.context["iteration"]
+        batch_size = fake_multinode_args.get("batch_size", 1)
+        node_prefix = fake_multinode_args.get("node_prefix", "")
+
+        for i in range(batch_size):
+            index = iteration * batch_size + i
+
+            farm = "{}{}".format(node_prefix, index % len(self._sandboxes))
+            sb = self._get_sandbox(farm)
+            ssh = self._get_sandbox_conn(sb["name"], sb, sb["host_container"])
+            ext_host_cidr = netaddr.IPNetwork(lnetwork_create_args.get('start_ext_cidr'))
+
+            self._add_chassis_external_host(ssh, ext_host_cidr.next(index))
+
 
 class OvnNorthboundFakeMultinode(OvnFakeMultinode):
 
@@ -339,6 +376,8 @@ class OvnNorthboundFakeMultinode(OvnFakeMultinode):
 
         if lnetwork_create_args.get('gw_router_per_network', False):
             self.add_chassis_nodes_localnet(fake_multinode_args)
+            self.add_chassis_external_hosts(fake_multinode_args,
+                                            lnetwork_create_args)
 
         lswitch_create_args['amount'] = fake_multinode_args.get('batch_size', 1)
         lswitch_create_args['batch'] = 1
