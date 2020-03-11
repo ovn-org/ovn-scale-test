@@ -163,9 +163,9 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
 
             lnetworks = lnetworks[networks_per_router:]
 
-    def _connect_gateway_router(self, router, network, gw_cidr, ext_cidr, sandbox):
+    def _connect_gateway_router(self, router, network, gw_cidr, ext_cidr, sandbox, batch):
         ovn_nbctl = self._get_ovn_controller(self.install_method)
-        ovn_nbctl.enable_batch_mode()
+        ovn_nbctl.enable_batch_mode(value=batch)
 
         base_mac = [i[:2] for i in self.task["uuid"].split('-')]
         base_mac[0] = str(hex(int(base_mac[0], 16) & 254))
@@ -253,6 +253,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
             LOG.error("_connect_networks_to_gw_routers: missing start_ext_cidr")
             return []
 
+        batch = lnetwork_args.get('batch', False)
         dps = []
         for lrouter in lrouters:
             for i, lnetwork in enumerate(lnetworks[:networks_per_router]):
@@ -261,7 +262,8 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
                              str(gw_cidr), str(ext_cidr)))
                 dps.append(self._connect_gateway_router(lrouter, lnetwork,
                                                         gw_cidr, ext_cidr,
-                                                        sandboxes[i]))
+                                                        sandboxes[i],
+                                                        batch))
                 gw_cidr = gw_cidr.next()
                 ext_cidr = ext_cidr.next()
             lnetworks = lnetworks[networks_per_router:]
@@ -274,8 +276,9 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
             LOG.error('_connect_gw_routers_routes: missing cluser_cidr')
             return
 
+        batch = lnetwork_args.get('batch', False)
         ovn_nbctl = self._get_ovn_controller(self.install_method)
-        ovn_nbctl.enable_batch_mode()
+        ovn_nbctl.enable_batch_mode(value=batch)
         for network, router, join_switch, gw_router, ext_switch in dps:
 
             router_name = router['name']

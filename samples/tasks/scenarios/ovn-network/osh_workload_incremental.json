@@ -2,6 +2,7 @@
 {% set farm_nodes = farm_nodes or 1 %}
 {% set ports_per_network = ports_per_network or 1 %}
 {% set gw_router = gw_router or False %}
+{% set gw_batch_ops = gw_batch_ops or False %}
 {% set ovn_monitor_all = ovn_monitor_all or false %}
 {% set ovn_cluster_db = ovn_cluster_db or false %}
 {% set ovn_central_ip = ovn_central_ip or "192.16.0.1" %}
@@ -187,6 +188,7 @@
                             "start_gw_cidr": "2.0.0.0/16",
                             "start_ext_cidr": "3.0.0.0/16",
                             "gw_router_per_network": {{gw_router}},
+                            "batch": {{gw_batch_ops}},
                             "cluster_cidr": "16.0.0.0/4"
                         },
                         "port_bind_args": {
