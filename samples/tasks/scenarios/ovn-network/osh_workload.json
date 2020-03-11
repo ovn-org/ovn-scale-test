@@ -73,7 +73,9 @@
                             "wait_up" : true,
                             "batch" : false
                         },
-                        "networks_per_router": {{networks}}
+                        "lnetwork_create_args": {
+                            "networks_per_router": {{networks}}
+                        }
                     },
                     "runner": {
                         "type": "serial",

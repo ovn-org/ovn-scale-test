@@ -35,10 +35,10 @@ class OvnFakeMultinode(ovn.OvnScenario):
     def _get_sandbox(self, sb_name):
         return self._sandboxes[sb_name]
 
-    def _get_sandbox_conn(self, sb_name, sb):
+    def _get_sandbox_conn(self, sb_name, sb, host_container=None):
         farm = sb["farm"]
         ssh = self.farm_clients(farm, "ovs-ssh")
-        ssh.set_sandbox(sb_name, self.install_method)
+        ssh.set_sandbox(sb_name, self.install_method, host_container)
         ssh.enable_batch_mode(False)
         return ssh
 
@@ -109,6 +109,12 @@ class OvnFakeMultinode(ovn.OvnScenario):
             cluster_db_cmd = "OVN_DB_CLUSTER=no"
         cmd = "cd {} && CHASSIS_COUNT=0 GW_COUNT=0 OVN_BR_CLEANUP=no {} ./ovn_cluster.sh stop".format(
             ovn_fake_path, cluster_db_cmd
+        )
+        ssh_conn.run(cmd)
+
+    def _add_chassis_localnet(self, ssh_conn, physnet):
+        cmd = "ovs-vsctl -- set open_vswitch . external-ids:ovn-bridge-mappings={}:br-ex".format(
+            physnet
         )
         ssh_conn.run(cmd)
 
@@ -196,6 +202,16 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
         cluster_db = fake_multinode_args.get("ovn_cluster_db")
         self._del_central(ssh, ovn_fake_path, cluster_db)
+
+    @scenario.configure(context={})
+    @atomic.action_timer("OvnFakeMultinode.add_chassis_node_localnet")
+    def add_chassis_node_localnet(self, fake_multinode_args = {}):
+        farm = fake_multinode_args.get("farm")
+        sb = self._get_sandbox(farm)
+        ssh = self._get_sandbox_conn(sb["name"], sb, sb["host_container"])
+
+        physnet = fake_multinode_args.get("physnet", "providernet")
+        self._add_chassis_localnet(ssh, physnet)
 
     @scenario.configure(context={})
     @atomic.action_timer("OvnFakeMultinode.add_chassis_nodes")
@@ -287,6 +303,23 @@ class OvnFakeMultinode(ovn.OvnScenario):
 
             self._del_chassis(ssh, node_name, ovn_fake_path)
 
+    @scenario.configure(context={})
+    @atomic.action_timer("OvnFakeMultinode.add_chassis_nodes_localnet")
+    def add_chassis_nodes_localnet(self, fake_multinode_args = {}):
+        iteration = self.context["iteration"]
+        batch_size = fake_multinode_args.get("batch_size", 1)
+        node_prefix = fake_multinode_args.get("node_prefix", "")
+        physnet = fake_multinode_args.get("physnet", "providernet")
+
+        for i in range(batch_size):
+            index = iteration * batch_size + i
+
+            farm = "{}{}".format(node_prefix, index % len(self._sandboxes))
+            sb = self._get_sandbox(farm)
+            ssh = self._get_sandbox_conn(sb["name"], sb, sb["host_container"])
+
+            self._add_chassis_localnet(ssh, physnet)
+
 
 class OvnNorthboundFakeMultinode(OvnFakeMultinode):
 
@@ -296,7 +329,7 @@ class OvnNorthboundFakeMultinode(OvnFakeMultinode):
     @scenario.configure(context={})
     def setup_switch_per_node(self, fake_multinode_args = {},
                               lswitch_create_args = {},
-                              networks_per_router = {},
+                              lnetwork_create_args = {},
                               lport_create_args = {},
                               port_bind_args = {},
                               create_mgmt_port = True):
@@ -304,10 +337,13 @@ class OvnNorthboundFakeMultinode(OvnFakeMultinode):
         self.connect_chassis_nodes(fake_multinode_args)
         self.wait_chassis_nodes(fake_multinode_args)
 
+        if lnetwork_create_args.get('gw_router_per_network', False):
+            self.add_chassis_nodes_localnet(fake_multinode_args)
+
         lswitch_create_args['amount'] = fake_multinode_args.get('batch_size', 1)
         lswitch_create_args['batch'] = 1
         self._create_routed_network(lswitch_create_args=lswitch_create_args,
-                                    networks_per_router=networks_per_router,
+                                    lnetwork_create_args=lnetwork_create_args,
                                     lport_create_args=lport_create_args,
                                     port_bind_args=port_bind_args,
                                     create_mgmt_port=create_mgmt_port)
