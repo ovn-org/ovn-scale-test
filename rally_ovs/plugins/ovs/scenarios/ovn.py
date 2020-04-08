@@ -273,6 +273,17 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         LOG.info("Add %s to port_group %s" % (port_list, port_group))
         ovn_nbctl.port_group_set(port_group, port_list)
 
+    @atomic.optional_action_timer("ovn.pg-add-port")
+    def _port_group_add_port(self, port_group, port):
+        ovn_nbctl = self.controller_client("ovn-nbctl")
+        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
+                              self.context['controller']['host_container'])
+        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl.enable_batch_mode(False)
+
+        port_uuid = ovn_nbctl.get("logical_switch_port", port, '_uuid')
+        ovn_nbctl.add("port_group", port_group, ('ports', ' ', port_uuid))
+
     @atomic.optional_action_timer("ovn.pg-del")
     def _port_group_del(self, port_group):
         ovn_nbctl = self.controller_client("ovn-nbctl")
