@@ -62,26 +62,37 @@ class OvnNorthbound(ovn.OvnScenario):
         else:
             self._address_set_add_addrs(name, ipaddr)
 
-    @atomic.action_timer("ovn.create_port_acls")
-    def create_port_acls(self, lswitch, lports, addr_set):
+    @atomic.action_timer("ovn.create_or_update_port_group")
+    def create_or_update_port_group(self, name, port_list, create = True):
+        if (create):
+            self._port_group_add(name, port_list, atomic_action = False)
+        else:
+            self._port_group_set(name, port_list, atomic_action = False)
+
+    @atomic.action_timer("ovn.create_port_group_acls")
+    def create_port_group_acls(self, acl_dev, lports, addr_set,
+                               acl_type="switch"):
         """
         create two acl for each logical port
         prio 1000: allow inter project traffic
         prio 900: deny all
         """
-        match = "%(direction)s == \"%(lport)s\" && ip4.dst == %(address_set)s"
-        acl_create_args = { "match" : match, "address_set" : addr_set }
-        self._create_acl(lswitch, lports, acl_create_args, 1,
+        match = "%(direction)s == %(lport)s && ip4.dst == $%(address_set)s"
+        acl_create_args = { "match" : match, "address_set" : addr_set,
+                            "type": acl_type }
+        self._create_acl(acl_dev, lports, acl_create_args, 1,
                          atomic_action = False)
-        acl_create_args = { "priority" : 900, "action" : "drop", "match" : "%(direction)s == \"%(lport)s\" && ip4" }
-        self._create_acl(lswitch, lports, acl_create_args, 1,
+        acl_create_args = { "priority" : 900,
+                            "match" : "%(direction)s == %(lport)s && ip4",
+                            "type": acl_type,  "action": "allow-related" }
+        self._create_acl(acl_dev, lports, acl_create_args, 1,
                          atomic_action = False)
 
-    def create_lport_acl_addrset(self, lswitch, lport_create_args, port_bind_args,
-                                 ip_start_index = 0, addr_set_index = 0,
-                                 create_addr_set = True, create_acls = True):
-        lports = self._create_lports(lswitch, lport_create_args,
-                                     lport_ip_shift = ip_start_index)
+    def configure_routed_lport(self, lswitch, lport_create_args, port_bind_args,
+                               ip_start_index = 0, address_set_size = 1,
+                               port_group_size = 1, create_acls = True):
+        lports = self._create_lport(lswitch, lport_create_args,
+                                    lport_ip_shift = ip_start_index)
 
         if create_acls:
             network_cidr = lswitch.get("cidr", None)
@@ -90,11 +101,26 @@ class OvnNorthbound(ovn.OvnScenario):
                 ipaddr = str(next(ip_list))
             else:
                 ipaddr = ""
-            self.create_or_update_address_set("addrset%d" % addr_set_index,
-                                              ipaddr, create_addr_set)
 
-            self.create_port_acls(lswitch, lports,
-                                  "$addrset%d" % addr_set_index)
+            iteration = self.context["iteration"]
+            addr_set_index = iteration / address_set_size
+            addr_set_name = "addrset%d" % addr_set_index
+            create_addr_set = (iteration % address_set_size) == 0
+            self.create_or_update_address_set(addr_set_name, ipaddr,
+                                              create_addr_set)
+
+            lport = lports[0]
+            port_group_index = iteration / port_group_size
+            create_port_group = (iteration % port_group_size) == 0
+            port_group_name = "pg%d" % port_group_index
+            self.create_or_update_port_group(port_group_name, lport["name"],
+                                             create_port_group)
+
+            if create_port_group:
+                port_group_acl = {"name" : "@%s" % port_group_name}
+                port_group = {"name" : port_group_name}
+                self.create_port_group_acls(port_group, [port_group_acl],
+                                            addr_set_name, "port-group")
 
         sandboxes = self.context["sandboxes"]
         sandbox = sandboxes[self.context["iteration"] % len(sandboxes)]
@@ -104,21 +130,21 @@ class OvnNorthbound(ovn.OvnScenario):
     def create_routed_lport(self, lport_create_args = None,
                             port_bind_args = None,
                             create_acls = True,
-                            address_set_size = 1):
+                            address_set_size = 1,
+                            port_group_size = 1):
         lswitches = self.context["ovn-nb"]
         ip_offset = lport_create_args.get("ip_offset", 1) if lport_create_args else 1
         address_set_size = 1 if address_set_size == 0 else address_set_size
+        port_group_size = 1 if port_group_size == 0 else port_group_size
 
         iteration = self.context["iteration"]
         lswitch = lswitches[iteration % len(lswitches)]
-        addr_set_index = iteration / address_set_size
         ip_start_index = iteration / len(lswitches) + ip_offset
 
-        self.create_lport_acl_addrset(lswitch, lport_create_args,
-                                      port_bind_args, ip_start_index,
-                                      addr_set_index,
-                                      (iteration % address_set_size) == 0,
-                                      create_acls)
+        self.configure_routed_lport(lswitch, lport_create_args,
+                                    port_bind_args, ip_start_index,
+                                    address_set_size, port_group_size,
+                                    create_acls)
 
     @scenario.configure(context={})
     def cleanup_routed_lswitches(self):

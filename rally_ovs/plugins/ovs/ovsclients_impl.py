@@ -216,19 +216,22 @@ class OvnNbctl(OvsClient):
             self.run("lsp-set-options", args=params)
 
         def acl_add(self, lswitch, direction, priority, match, action,
-                    log=False):
+                    log=False, entity="switch"):
             opts = ["--log"] if log else []
+            opts.append("--type=%s" % entity)
             match = pipes.quote(match)
             params = [lswitch, direction, str(priority), match, action]
             self.run("acl-add", opts, params)
 
-        def acl_list(self, lswitch):
+        def acl_list(self, lswitch, entity="switch"):
+            opts = ["--type=" + entity]
             params = [lswitch]
-            self.run("acl-list", args=params)
+            self.run("acl-list", opts, args=params)
 
 
         def acl_del(self, lswitch, direction=None,
-                    priority=None, match=None):
+                    priority=None, match=None, entity="switch"):
+            opts = ["--type=" + entity]
             params = [lswitch]
             if direction:
                 params.append(direction)
@@ -236,7 +239,19 @@ class OvnNbctl(OvsClient):
                 params.append(priority)
             if match:
                 params.append(match)
-            self.run("acl-del", args=params)
+            self.run("acl-del", opts, args=params)
+
+        def port_group_add(self, port_group, port_list):
+            params = [port_group, port_list]
+            self.run("pg-add", [], params)
+
+        def port_group_set(self, port_group, port_list):
+            params = [port_group, port_list]
+            self.run("pg-set-ports", [], params)
+
+        def port_group_del(self, port_group):
+            params = [port_group]
+            self.run("pg-del", [], params)
 
         def show(self, lswitch=None):
             params = [lswitch] if lswitch else []
