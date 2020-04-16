@@ -44,6 +44,10 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         self._stop_daemon()
         return self._start_daemon()
 
+    def _get_gw_ip(self, network_cidr):
+        # Use the last IP in the CIDR as gateway IP.
+        return netaddr.IPAddress(network_cidr.last - 1)
+
     def _create_lswitches(self, lswitch_create_args, num_switches=-1):
         self.RESOURCE_NAME_FORMAT = "lswitch_XXXXXX_XXXXXX"
 
@@ -55,7 +59,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
 
-        mcast_snoop = lswitch_create_args.get("mcast_snoop", "true")
+        mcast_snoop = lswitch_create_args.get("mcast_snoop", "false")
         mcast_idle = lswitch_create_args.get("mcast_idle_timeout", 300)
         mcast_table_size = lswitch_create_args.get("mcast_table_size", 2048)
 
@@ -137,8 +141,10 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         base_mac[3:] = ['00']*3
         mac = utils.get_random_mac(base_mac)
 
+        gw = self._get_gw_ip(network["cidr"])
+        lrouter_port_ip = '{}/{}'.format(gw, network["cidr"].prefixlen)
         lrouter_port = ovn_nbctl.lrouter_port_add(router["name"], network["name"], mac,
-                                                  str(network["cidr"]))
+                                                  lrouter_port_ip)
         ovn_nbctl.flush()
 
 

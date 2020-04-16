@@ -15,7 +15,6 @@
 import netaddr
 import random
 import re
-import copy
 
 from rally_ovs.plugins.ovs.scenarios import ovn
 
@@ -32,28 +31,11 @@ class OvnNorthbound(ovn.OvnScenario):
                               lport_create_args = None,
                               port_bind_args = None,
                               create_mgmt_port = True):
-        lrouters = self.context["datapaths"]["routers"]
-        iteration = self.context["iteration"]
-        sandboxes = self.context["sandboxes"]
-
-        lswitch_args = copy.copy(lswitch_create_args)
-        start_cidr = lswitch_create_args.get("start_cidr", "")
-        if start_cidr:
-            start_cidr = netaddr.IPNetwork(start_cidr)
-            cidr = start_cidr.next(iteration)
-            lswitch_args["start_cidr"] = str(cidr)
-        lswitches = self._create_lswitches(lswitch_args)
-
-        if networks_per_router:
-            self._connect_networks_to_routers(lswitches, lrouters,
-                                              networks_per_router)
-
-        if create_mgmt_port == False:
-            return
-
-        sandbox = sandboxes[iteration % len(sandboxes)]
-        lport = self._create_lports(lswitches[0], lport_create_args)
-        self._bind_ports_and_wait(lport, [sandbox], port_bind_args)
+        self._create_routed_network(lswitch_create_args,
+                                    networks_per_router,
+                                    lport_create_args,
+                                    port_bind_args,
+                                    create_mgmt_port)
 
     @atomic.action_timer("ovn.create_or_update_address_set")
     def create_or_update_address_set(self, name, ipaddr, create = True):
@@ -91,8 +73,8 @@ class OvnNorthbound(ovn.OvnScenario):
     def configure_routed_lport(self, lswitch, lport_create_args, port_bind_args,
                                ip_start_index = 0, address_set_size = 1,
                                port_group_size = 1, create_acls = True):
-        lports = self._create_lport(lswitch, lport_create_args,
-                                    lport_ip_shift = ip_start_index)
+        lports = self._create_switch_lports(lswitch, lport_create_args,
+                                            lport_ip_shift = ip_start_index)
 
         if create_acls:
             network_cidr = lswitch.get("cidr", None)
@@ -191,9 +173,7 @@ class OvnNorthbound(ovn.OvnScenario):
                               lports_per_lswitch=None):
 
         lswitches = self._create_lswitches(lswitch_create_args)
-
-        for lswitch in lswitches:
-            self._create_lports(lswitch, lport_create_args, lports_per_lswitch)
+        self._create_lports(lswitches, lport_create_args, lports_per_lswitch)
 
         self._list_lports(lswitches)
 
@@ -205,11 +185,9 @@ class OvnNorthbound(ovn.OvnScenario):
                               lports_per_lswitch=None):
 
         lswitches = self._create_lswitches(lswitch_create_args)
-        for lswitch in lswitches:
-            lports = self._create_lports(lswitch, lport_create_args,
-                                        lports_per_lswitch)
-            self._delete_lport(lports)
-
+        lports = self._create_lports(lswitches, lport_create_args,
+                                     lports_per_lswitch)
+        self._delete_lport(lports)
         self._delete_lswitch(lswitches)
 
 
@@ -223,7 +201,8 @@ class OvnNorthbound(ovn.OvnScenario):
         if lswitch_create_args != None:
             lswitches = self._create_lswitches(lswitch_create_args)
             for lswitch in lswitches:
-                lports = self._create_lports(lswitch, lport_create_args,
+                lports = self._create_switch_lports(lswitch,
+                                                    lport_create_args,
                                                     lports_per_lswitch)
                 lswitch["lports"] = lports
         else:

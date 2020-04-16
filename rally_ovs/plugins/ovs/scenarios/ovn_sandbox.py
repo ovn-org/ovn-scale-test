@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import copy
+import netaddr
 import six
 
 from rally.task import scenario
@@ -88,6 +90,8 @@ class OvnSandbox(sandbox.SandboxScenario):
             key            desc
             ===========    ========
             farm           str, the name of farm node
+            farm-prefix    str, the prefix of farm node names to be used with
+                           iterative runners.
             amount         int, the number of sandbox to be created
             batch          int, the number of sandbox to be created in one session
             start_cidr     str, start value for CIDR used by sandboxes
@@ -96,7 +100,22 @@ class OvnSandbox(sandbox.SandboxScenario):
             ===========    ========
 
         """
-        self._create_sandbox(sandbox_create_args)
+        start_cidr = netaddr.IPNetwork(sandbox_create_args.get("start_cidr",
+                                                               "1.0.0.0/8"))
+        farm = sandbox_create_args.get("farm", "")
+        if not farm:
+            iteration = self.context["iteration"]
+            amount = sandbox_create_args.get("amount", 1)
+            farm_prefix = sandbox_create_args.get("farm-prefix", "")
+            farm = "{}{}".format(farm_prefix, iteration)
+
+            # Increment sandbox cidr based on iteration.
+            sandbox_create_args = copy.copy(sandbox_create_args)
+            sandbox_create_args["start_cidr"] = "{}/{}".format(
+                str(start_cidr.ip + iteration * amount + 1),
+                start_cidr.prefixlen)
+
+        self._create_sandbox(sandbox_create_args, farm)
 
 
     @scenario.configure(context={})
