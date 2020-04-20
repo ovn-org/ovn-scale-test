@@ -117,10 +117,65 @@ class OvnNorthbound(ovn.OvnScenario):
             self._port_group_add_port("portGroupDefDeny", port_list,
                                       atomic_action = False)
 
+    def create_or_update_default_deny_multicast_port_group(self, port_list):
+        # default_multicast_deny port_group
+        if (self.context["iteration"] == 0):
+            self._port_group_add("portGroupMultiDefDeny", port_list, atomic_action = False)
+
+            # create defualt acl for ingress and egress multicast traffic: drop all multicast
+            port_group_acl = {"name" : "@portGroupMultiDefDeny"}
+            port_group = {"name" : "portGroupMultiDefDeny"}
+
+            # ingress
+            acl_create_args = { "match" : "%(direction)s == %(lport)s && ip4.mcast",
+                                "priority": 1011, "direction": "from-lport",
+                                "type": "port-group", "action": "drop" }
+            self._create_acl(port_group, [port_group_acl], acl_create_args, 1,
+                             atomic_action = False)
+
+            # egress
+            acl_create_args = { "match" : "%(direction)s == %(lport)s && ip4.mcast",
+                                "priority": 1011, "type": "port-group",
+                                "action": "drop" }
+            self._create_acl(port_group, [port_group_acl], acl_create_args, 1,
+                             atomic_action = False)
+        else:
+            self._port_group_add_port("portGroupMultiDefDeny", port_list,
+                                      atomic_action = False)
+
+    @atomic.action_timer("ovn.create_or_update_name_space")
+    def create_or_update_name_space(self, name, port_list, ipaddr,
+                                    create = True):
+        port_group_name = "mcastPortGroup_%s" % name
+        port_group_acl = {"name" : "@" + port_group_name}
+        port_group = {"name" : port_group_name}
+
+        if (create):
+            self._create_address_set(name, ipaddr)
+            self._port_group_add(port_group_name, port_list,
+                                 atomic_action = False)
+
+            # create multicast ACL
+            match = "%(direction)s == %(lport)s && ip4.mcast"
+            acl_create_args = { "match" : match, "priority": 1012,
+                                "direction": "from-lport",
+                                "type": "port-group" }
+            self._create_acl(port_group, [port_group_acl], acl_create_args, 1,
+                             atomic_action = False)
+            acl_create_args = { "match" : match, "priority": 1012,
+                                "type": "port-group" }
+            self._create_acl(port_group, [port_group_acl], acl_create_args, 1,
+                             atomic_action = False)
+        else:
+            self._address_set_add_addrs(name, ipaddr)
+            self._port_group_add_port(port_group_name, port_list,
+                                      atomic_action = False)
+
     @atomic.action_timer("ovn.create_or_update_network_policy")
     def create_or_update_network_policy(self, name, port_list,
                                         ipaddr, create = True):
         self.create_or_update_default_deny_port_group(port_list)
+        self.create_or_update_default_deny_multicast_port_group(port_list)
 
         if (create):
             self._port_group_add(name, port_list, atomic_action = False)
@@ -132,7 +187,7 @@ class OvnNorthbound(ovn.OvnScenario):
             self.create_port_group_acls(name)
 
     def configure_routed_lport(self, lswitch, lport_create_args, port_bind_args,
-                               ip_start_index = 0, address_set_size = 1,
+                               ip_start_index = 0, name_space_size = 1,
                                network_policy_size = 1, create_acls = True):
         lports = self._create_switch_lports(lswitch, lport_create_args,
                                             lport_ip_shift = ip_start_index)
@@ -147,11 +202,20 @@ class OvnNorthbound(ovn.OvnScenario):
 
             lport = lports[0]
             iteration = self.context["iteration"]
+
+            # create/update network policy
             network_policy_index = iteration / network_policy_size
             create_network_policy = (iteration % network_policy_size) == 0
             port_group_name = "networkPolicy%d" % network_policy_index
             self.create_or_update_network_policy(port_group_name, lport["name"],
-						 ipaddr, create_network_policy)
+                                                 ipaddr, create_network_policy)
+
+            # create/update namespace
+            name_space_index = iteration / name_space_size
+            create_name_space = (iteration % name_space_size) == 0
+            address_set_name = "nameSpace%d" % name_space_index
+            self.create_or_update_name_space(address_set_name, lport["name"],
+                                             ipaddr, create_name_space)
 
         sandboxes = self.context["sandboxes"]
         sandbox = sandboxes[self.context["iteration"] % len(sandboxes)]
@@ -161,11 +225,10 @@ class OvnNorthbound(ovn.OvnScenario):
     def create_routed_lport(self, lport_create_args = None,
                             port_bind_args = None,
                             create_acls = True,
-                            address_set_size = 1,
+                            name_space_size = 1,
                             network_policy_size = 1):
         lswitches = self.context["ovn-nb"]
         ip_offset = lport_create_args.get("ip_offset", 1) if lport_create_args else 1
-        address_set_size = 1 if address_set_size == 0 else address_set_size
 
         iteration = self.context["iteration"]
         lswitch = lswitches[iteration % len(lswitches)]
@@ -173,7 +236,7 @@ class OvnNorthbound(ovn.OvnScenario):
 
         self.configure_routed_lport(lswitch, lport_create_args,
                                     port_bind_args, ip_start_index,
-                                    address_set_size, network_policy_size,
+                                    name_space_size, network_policy_size,
                                     create_acls)
 
     @scenario.configure(context={})
