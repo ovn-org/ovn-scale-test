@@ -111,7 +111,8 @@
                             "wait_up" : true,
                             "batch" : false
                         },
-                        "address_set_size": 2,
+                        "name_space_size": 2,
+                        "network_policy_size": 2,
                         "create_acls": true
                     },
                     "runner": {
