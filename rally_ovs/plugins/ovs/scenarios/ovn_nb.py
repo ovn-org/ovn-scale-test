@@ -226,7 +226,8 @@ class OvnNorthbound(ovn.OvnScenario):
                             port_bind_args = None,
                             create_acls = True,
                             name_space_size = 1,
-                            network_policy_size = 1):
+                            network_policy_size = 1,
+                            ext_cmd_args = {}):
         lswitches = self.context["ovn-nb"]
         ip_offset = lport_create_args.get("ip_offset", 1) if lport_create_args else 1
 
@@ -234,10 +235,34 @@ class OvnNorthbound(ovn.OvnScenario):
         lswitch = lswitches[iteration % len(lswitches)]
         ip_start_index = iteration / len(lswitches) + ip_offset
 
+        start_cmd = ext_cmd_args.get("start_cmd", None)
+        if start_cmd and iteration == start_cmd.get("iter", -1):
+               self.handle_cmd(start_cmd)
+        stop_cmd = ext_cmd_args.get("stop_cmd", None)
+        if stop_cmd and iteration == stop_cmd.get("iter", -1):
+               self.handle_cmd(stop_cmd)
+
         self.configure_routed_lport(lswitch, lport_create_args,
                                     port_bind_args, ip_start_index,
                                     name_space_size, network_policy_size,
                                     create_acls)
+
+    @scenario.configure()
+    def handle_cmd(self, cmd_args = {}):
+        controller_pid_name = cmd_args.get("controller_pid_name", "")
+        farm_pid_name = cmd_args.get("farm_pid_name", "")
+        sandbox_size = cmd_args.get("num_sandboxes", 0)
+        background_opt = cmd_args.get("background_opt", False)
+        pid_opt = cmd_args.get("pid_opt", "")
+        cmd = cmd_args.get("cmd", "")
+
+        self.runControllerCmd(cmd, pid_opt, controller_pid_name,
+                              background_opt)
+
+        sandboxes = self.context.get("sandboxes", [])
+        for i in range(sandbox_size):
+            self.runFarmCmd(sandboxes[i], cmd, pid_opt, farm_pid_name,
+                            background_opt)
 
     @scenario.configure(context={})
     def cleanup_routed_lswitches(self):

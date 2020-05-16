@@ -458,7 +458,7 @@ class OvsSsh(OvsClient):
             self.install_method = install_method
             self.host_container = host_container
 
-        def run(self, cmd):
+        def run(self, cmd, stdout=sys.stdout):
             self.cmds = self.cmds or []
 
             if self.host_container:
@@ -469,19 +469,19 @@ class OvsSsh(OvsClient):
             if self.batch_mode:
                 return
 
-            self.flush()
+            self.flush(stdout)
 
         def run_immediate(self, cmd, stdout=sys.stdout, stderr=sys.stderr):
             self.ssh.run(cmd, stdout)
 
-        def flush(self):
+        def flush(self, stdout=sys.stdout):
             if self.cmds == None:
                 return
 
             cmds = "\n".join(self.cmds)
             self.cmds = None
 
-            self.ssh.run(cmds, stdout=sys.stdout, stderr=sys.stderr)
+            self.ssh.run(cmds, stdout=stdout, stderr=sys.stderr)
 
     def create_client(self):
         print("*********   call OvsSsh.create_client")

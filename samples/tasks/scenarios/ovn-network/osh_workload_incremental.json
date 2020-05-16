@@ -220,6 +220,36 @@
             ]
         },
         {
+            "title": "Run PerfTest",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.handle_cmd",
+                    "args": {
+                        "cmd_args": {
+                            "cmd": "perf record -g -e cpu-cycles -F 99 -o ovn-perf.data",
+                            "background_opt": true,
+                            "controller_pid_name": "ovn-northd",
+                            "farm_pid_name": "ovn-controller",
+                            "pid_opt": "-p",
+                            "num_sanboxes" : {{farm_nodes}}
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                       "sandbox": {"tag": "ToR1"},
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                       },
+                       "ovn_nb": {}
+                    }
+                }
+            ]
+        },
+        {
             "title": "Create switch-per-node scenario (add pods workload)",
             "run_in_parallel": true,
             "workloads": [
@@ -260,6 +290,32 @@
                             "cert": "/opt/ovn/ovn-cert.pem",
                             "cacert": "/opt/ovn/pki/switchca/cacert.pem"
                        }
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Stop PerfTest",
+            "run_in_parallel": true,
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.handle_cmd",
+                    "args": {
+                        "cmd_args": {
+                            "num_sanboxes" : {{farm_nodes}},
+                            "cmd" : "killall -w perf"
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                       "sandbox": {"tag": "ToR1"},
+                       "ovn_multihost" : {
+                            "controller": "ovn-controller-node"
+                       },
+                       "ovn_nb": {}
                     }
                 }
             ]
