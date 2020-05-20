@@ -130,9 +130,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
     def _connect_network_to_router(self, router, network):
         LOG.info("Connect network %s to router %s" % (network["name"], router["name"]))
 
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.enable_batch_mode(False)
 
 

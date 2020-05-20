@@ -257,28 +257,19 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
     @atomic.optional_action_timer("ovn.pg-add")
     def _port_group_add(self, port_group, port_list):
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
-        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         LOG.info("create %s port_group [%s]" % (port_group, port_list))
         ovn_nbctl.port_group_add(port_group, port_list)
 
     @atomic.optional_action_timer("ovn.pg-set")
     def _port_group_set(self, port_group, port_list):
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
-        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         LOG.info("Add %s to port_group %s" % (port_list, port_group))
         ovn_nbctl.port_group_set(port_group, port_list)
 
     @atomic.optional_action_timer("ovn.pg-add-port")
     def _port_group_add_port(self, port_group, port):
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
-        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.enable_batch_mode(False)
 
         port_uuid = ovn_nbctl.get("logical_switch_port", port, '_uuid')
@@ -286,10 +277,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
     @atomic.optional_action_timer("ovn.pg-del")
     def _port_group_del(self, port_group):
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
-        ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         LOG.info("Delete %s port_group" % port_group)
         ovn_nbctl.port_group_del(port_group, port_list)
 
