@@ -14,10 +14,13 @@
 
 import sys
 import itertools
+import logging
 import pipes
 from io import StringIO
 from rally_ovs.plugins.ovs.ovsclients import *
 from rally_ovs.plugins.ovs.utils import get_ssh_from_credential
+
+LOG = logging.getLogger(__name__)
 
 @configure("ssh")
 class SshClient(OvsClient):
@@ -75,9 +78,12 @@ class OvnNbctl(OvsClient):
                         cmd_prefix = ["sudo"]
 
                 if cmd == "exit":
-                    cmd_prefix.append("  ovs-appctl -t ")
-
-                if self.socket:
+                    if self.socket:
+                        ovn_cmd = "ovs-appctl -t " + self.socket
+                    else:
+                        LOG.error("Called 'ovn-nbctl exit' without daemon mode")
+                        return
+                elif self.socket:
                     ovn_cmd = "ovn-nbctl -u " + self.socket
                 else:
                     ovn_cmd = "ovn-nbctl"
@@ -104,11 +110,17 @@ class OvnNbctl(OvsClient):
                     run_cmds.append("sudo docker exec ovn-north-database ovn-nbctl " + " ".join(self.cmds))
                 elif self.install_method == "physical":
                     if self.host_container:
-                        cmd_prefix = "sudo docker exec " + self.host_container + " ovn-nbctl"
+                        cmd_prefix = "sudo docker exec " + self.host_container
                     else:
-                        cmd_prefix = "sudo ovn-nbctl"
+                        cmd_prefix = "sudo"
 
-                    run_cmds.append(cmd_prefix + " ".join(self.cmds))
+                    if self.socket:
+                        ovn_cmd = "ovn-nbctl -u " + self.socket
+                    else:
+                        ovn_cmd = "ovn-nbctl"
+
+                    run_cmds.append("{} {} {}".format(cmd_prefix, ovn_cmd,
+                                                      " ".join(self.cmds)))
 
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
