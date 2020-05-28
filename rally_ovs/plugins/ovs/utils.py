@@ -23,9 +23,11 @@ from rally.common import utils
 
 from rally.common import db
 
+import socket
+import selectors
+import time
 
 cidr_incr = utils.RAMInt()
-
 
 '''
     Find credential resource from DB by deployment uuid, and return
@@ -147,9 +149,87 @@ def get_sandboxes(deploy_uuid, farm="", tag=""):
     return sandboxes
 
 
+class NCatError(Exception):
+    def __init__(self, details):
+        self.details = details
 
 
+class NCatClient(object):
+    def __init__(self, server):
+        self.server = server
+        self.sock = socket.create_connection((server, 8000))
+        self.sel = selectors.DefaultSelector()
+        self.sel.register(self.sock, selectors.EVENT_READ)
+
+    def run(self, cmd, stdin=None, stdout=None, stderr=None,
+            raise_on_error=True, timeout=3600):
+        start = time.clock_gettime(time.CLOCK_MONOTONIC)
+        end = time.clock_gettime(time.CLOCK_MONOTONIC) + timeout
+        to = end - start
+        # We have to doctor the command a bit for three reasons:
+        # 1. We need to add a newline to ensure that the command
+        #    gets sent to the server and doesn't just get put in
+        #    the socket's write buffer.
+        # 2. We need to pipe stderr to stdout so that stderr gets
+        #    returned over the client connection.
+        # 3. We need to add some marker text so our client knows
+        #    that it has received all output from the command. This
+        #    marker text let's us know if the command completed
+        #    successfully or not.
+        good = "SUCCESS"
+        bad = "FAIL"
+        result = f"&& echo -n {good} || echo -n {bad}"
+        self.sock.send(f"({cmd}) 2>&1 {result}\n".encode('utf-8'))
+        out = ""
+        stream = None
+        error = False
+        while True:
+            events = self.sel.select(to)
+            for key, mask in events:
+                buf = key.fileobj.recv(4096).decode('utf-8')
+                if buf.endswith(good):
+                    out += buf[:-len(good)]
+                    stream = stdout
+                    break
+                elif buf.endswith(bad):
+                    out += buf[:-len(bad)]
+                    # We assume that if the command errored, then everything
+                    # that was output was stderr. This isn't necessarily
+                    # accurate but it hopefully won't ruffle too many feathers.
+                    stream = stderr
+                    error = True
+                    break
+                else:
+                    out += buf
+                    to = end - time.clock_gettime(time.CLOCK_MONOTONIC)
+
+        if stream is not None:
+            stream.write(out)
+
+        if error and raise_on_error:
+            details = (f"Error running command {cmd}\n"
+                       f"Last stderr output is {out}\n")
+            raise NCatError(details)
+
+    def close(self):
+        # Test scenarios call close after every operation because with SSH,
+        # this is necessary to ensure that we do not open too many
+        # connections. Our ncat client cache is keyed on hostname rather than
+        # on the controller node. This means that we open far fewer connections
+        # than SSH does. Therefore, there is no reason to close connections
+        # as frequently as we do with SSH. We can afford to leave the
+        # connection open and reuse the clients instead. This is why we "pass"
+        # in this method.
+        pass
 
 
+NCAT_CLIENT_CACHE = {}
 
 
+def get_client_connection(cred):
+    try:
+        global NCAT_CLIENT_CACHE
+        server = cred["host"]
+        return NCAT_CLIENT_CACHE.setdefault(server, NCatClient(server))
+    except socket.error:
+        return get_ssh_from_credential(cred)
