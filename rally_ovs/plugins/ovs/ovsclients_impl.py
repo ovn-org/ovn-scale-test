@@ -14,10 +14,13 @@
 
 import sys
 import itertools
+import logging
 import pipes
 from io import StringIO
 from rally_ovs.plugins.ovs.ovsclients import *
 from rally_ovs.plugins.ovs.utils import get_ssh_from_credential
+
+LOG = logging.getLogger(__name__)
 
 @configure("ssh")
 class SshClient(OvsClient):
@@ -75,9 +78,12 @@ class OvnNbctl(OvsClient):
                         cmd_prefix = ["sudo"]
 
                 if cmd == "exit":
-                    cmd_prefix.append("  ovs-appctl -t ")
-
-                if self.socket:
+                    if self.socket:
+                        ovn_cmd = "ovs-appctl -t " + self.socket
+                    else:
+                        LOG.error("Called 'ovn-nbctl exit' without daemon mode")
+                        return
+                elif self.socket:
                     ovn_cmd = "ovn-nbctl -u " + self.socket
                 else:
                     ovn_cmd = "ovn-nbctl"
@@ -104,11 +110,17 @@ class OvnNbctl(OvsClient):
                     run_cmds.append("sudo docker exec ovn-north-database ovn-nbctl " + " ".join(self.cmds))
                 elif self.install_method == "physical":
                     if self.host_container:
-                        cmd_prefix = "sudo docker exec " + self.host_container + " ovn-nbctl"
+                        cmd_prefix = "sudo docker exec " + self.host_container
                     else:
-                        cmd_prefix = "sudo ovn-nbctl"
+                        cmd_prefix = "sudo"
 
-                    run_cmds.append(cmd_prefix + " ".join(self.cmds))
+                    if self.socket:
+                        ovn_cmd = "ovn-nbctl -u " + self.socket
+                    else:
+                        ovn_cmd = "ovn-nbctl"
+
+                    run_cmds.append("{} {} {}".format(cmd_prefix, ovn_cmd,
+                                                      " ".join(self.cmds)))
 
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
@@ -272,9 +284,24 @@ class OvnNbctl(OvsClient):
             self.run("sync", opts)
             self.batch_mode = batch_mode
 
-        def start_daemon(self):
+        def start_daemon(self, nbctld_config):
             stdout = StringIO()
             opts = ["--detach",  "--pidfile", "--log-file"]
+
+            if "remote" in nbctld_config:
+                ovn_remote = nbctld_config["remote"]
+                prot = nbctld_config["prot"]
+                central_ips = [ip.strip() for ip in ovn_remote.split('-')]
+                # If there is only one ip, then we can use unixctl socket.
+                if len(central_ips) > 1:
+                    remote = ",".join(["{}:{}:6641".format(prot, r)
+                                      for r in central_ips])
+                    opts.append("--db=" + remote)
+                    if prot == "ssl":
+                        opts.append("-p {} -c {} -C {}".format(
+                            nbctld_config["privkey"], nbctld_config["cert"],
+                            nbctld_config["cacert"]))
+
             self.run("", opts=opts, stdout=stdout, raise_on_error=False)
             return stdout.getvalue().rstrip()
 
@@ -299,6 +326,7 @@ class OvnSbctl(OvsClient):
             self.sandbox = None
             self.batch_mode = False
             self.cmds = None
+            self.sbctl_cmd = "ovn-sbctl --no-leader-only"
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -329,7 +357,7 @@ class OvnSbctl(OvsClient):
                     else:
                         cmd_prefix = ["sudo"]
 
-                cmd = itertools.chain(cmd_prefix, ["ovn-sbctl"], opts, [cmd], args)
+                cmd = itertools.chain(cmd_prefix, [self.sbctl_cmd], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
 
             self.ssh.run("\n".join(self.cmds),
@@ -346,14 +374,14 @@ class OvnSbctl(OvsClient):
             if self.sandbox:
                 if self.install_method == "sandbox":
                     run_cmds.append(". %s/sandbox.rc" % self.sandbox)
-                    run_cmds.append("ovn-sbctl" + " ".join(self.cmds))
+                    run_cmds.append(self.sbctl_cmd + " ".join(self.cmds))
                 elif self.install_method == "docker":
-                    run_cmds.append("sudo docker exec ovn-north-database ovn-sbctl " + " ".join(self.cmds))
+                    run_cmds.append("sudo docker exec ovn-north-database " + self.sbctl_cmd + " ".join(self.cmds))
                 elif self.install_method == "physical":
                     if self.host_container:
-                        run_cmds.append("sudo docker exec " + self.host_container + " ovn-sbctl" + " ".join(self.cmds))
+                        run_cmds.append("sudo docker exec " + self.host_container + " " + self.sbctl_cmd  + " ".join(self.cmds))
                     else:
-                        run_cmds.append("sudo ovn-sbctl" + " ".join(self.cmds))
+                        run_cmds.append("sudo " + self.sbctl_cmd + " ".join(self.cmds))
 
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
@@ -369,13 +397,13 @@ class OvnSbctl(OvsClient):
         def count_igmp_flows(self, lswitch, network_prefix='239'):
             stdout = StringIO()
             self.ssh.run(
-                "ovn-sbctl list datapath_binding | grep {sw} -B 1 | "
+                self.sbctl_cmd + " list datapath_binding | grep {sw} -B 1 | "
                 "grep uuid | cut -f 2 -d ':'".format(sw=lswitch),
                 stdout=stdout)
             uuid = stdout.getvalue().rstrip()
             stdout = StringIO()
             self.ssh.run(
-                "ovn-sbctl list logical_flow | grep 'dst == {nw}' -B 1 | "
+                self.sbctl_cmd + " list logical_flow | grep 'dst == {nw}' -B 1 | "
                 "grep {uuid} -B 1 | wc -l".format(
                 uuid=uuid, nw=network_prefix),
                 stdout=stdout

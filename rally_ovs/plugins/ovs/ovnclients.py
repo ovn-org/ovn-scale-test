@@ -32,17 +32,17 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
         return ovn_nbctl
 
-    def _start_daemon(self):
+    def _start_daemon(self, nbctld_config):
         ovn_nbctl = self._get_ovn_controller(self.install_method)
-        return ovn_nbctl.start_daemon()
+        return ovn_nbctl.start_daemon(nbctld_config)
 
     def _stop_daemon(self):
         ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.stop_daemon()
 
-    def _restart_daemon(self):
+    def _restart_daemon(self, nbctld_config):
         self._stop_daemon()
-        return self._start_daemon()
+        return self._start_daemon(nbctld_config)
 
     def _get_gw_ip(self, network_cidr):
         # Use the last IP in the CIDR as gateway IP.
@@ -130,9 +130,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
     def _connect_network_to_router(self, router, network):
         LOG.info("Connect network %s to router %s" % (network["name"], router["name"]))
 
-        ovn_nbctl = self.controller_client("ovn-nbctl")
-        ovn_nbctl.set_sandbox("controller-sandbox", self.install_method,
-                              self.context['controller']['host_container'])
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
         ovn_nbctl.enable_batch_mode(False)
 
 
