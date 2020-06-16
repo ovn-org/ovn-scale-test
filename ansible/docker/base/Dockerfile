@@ -35,6 +35,7 @@ RUN apt-get install -y --no-install-recommends \
             libtool \
             uuid-runtime \
             linux-headers-$(uname -r) \
+            openssl-dev \
     && apt-get clean
 
 # DO NOT commit; the following are for debugging purpose
