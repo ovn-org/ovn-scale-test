@@ -73,6 +73,7 @@ class SandboxEngine(engine.Engine):
         ovs_server = get_updated_server(server, user=ovs_user)
         self._put_file(ovs_server, "install.sh")
         self._put_file(ovs_server, "ovs-sandbox.sh")
+        self._put_file(ovs_server, "certs.tar.gz")
 
 
         cmds = []

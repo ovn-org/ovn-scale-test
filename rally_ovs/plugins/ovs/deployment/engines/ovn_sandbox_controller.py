@@ -101,13 +101,18 @@ class OvnSandboxControllerEngine(SandboxEngine):
         ovs_user = self.config.get("ovs_user", OVS_USER)
         ovs_controller_cidr = self.config.get("controller_cidr")
         net_dev = self.config.get("net_dev", "eth0")
+        ssl = self.config.get("enable_ssl", False)
 
         # start ovn controller with non-root user
         ovs_server = get_updated_server(server, user=ovs_user)
-
-        cmd = "./ovs-sandbox.sh --controller --ovn \
-                            --controller-ip %s --device %s;" % \
-                        (ovs_controller_cidr, net_dev)
+        if ssl:
+            cmd = "./ovs-sandbox.sh --controller --ovn \
+                                --controller-ip %s --device %s --ssl;" % \
+                  (ovs_controller_cidr, net_dev)
+        else:
+            cmd = "./ovs-sandbox.sh --controller --ovn \
+                                --controller-ip %s --device %s;" % \
+                            (ovs_controller_cidr, net_dev)
 
         if install_method == "docker":
             LOG.info("Do not run ssh; deployed by ansible-docker")

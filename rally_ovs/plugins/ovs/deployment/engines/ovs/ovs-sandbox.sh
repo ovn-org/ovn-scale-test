@@ -108,6 +108,8 @@ Other options:
   --cleanup=SANDBOX    Cleanup the sandbox
   --cleanup-all        Cleanup all sandboxes
   --graceful           Graceful cleanup/stop sandbox
+  --ssl                Enable ssl
+
 EOF
             exit 0
             ;;
@@ -171,6 +173,9 @@ EOF
             ;;
         -D|--device)
             prev=device
+            ;;
+        --ssl)
+            enable_ssl=true
             ;;
         -*)
             echo "unrecognized option $option (use --help for help)" >&2
@@ -653,31 +658,67 @@ OVN_SB_DB=unix:$sandbox/db-sb.sock; export OVN_SB_DB
 EOF
             . $sandbox_name/sandbox.rc
 
-            # Northbound db server
-            prog_name='ovsdb-server-nb'
-            run_service $prog_name ovsdb-server --detach --no-chdir \
-                --pidfile=$prog_name.pid \
-                --unixctl=$prog_name.ctl \
-                -vconsole:off -vsyslog:off -vfile:info \
-                --log-file=$prog_name.log \
-                --remote=p$OVN_NB_DB \
-                conf-nb.db ovnnb.db
-            pid=`cat $sandbox_name/$prog_name.pid`
-            mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
 
-            # Southbound db server
-            prog_name='ovsdb-server-sb'
-            run_service $prog_name ovsdb-server --detach --no-chdir \
-                --pidfile=$prog_name.pid \
-                --unixctl=$prog_name.ctl \
-                -vconsole:off -vsyslog:off -vfile:info \
-                --log-file=$prog_name.log \
-                --remote="p$OVN_SB_DB" \
-                --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
-                conf-sb.db ovnsb.db
-            pid=`cat $sandbox_name/$prog_name.pid`
-            mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
+            if $enable_ssl ; then
+                # Northbound db server
+                prog_name='ovsdb-server-nb'
+                run_service $prog_name ovsdb-server --detach --no-chdir \
+                    --pidfile=$prog_name.pid \
+                    --unixctl=$prog_name.ctl \
+                    -vconsole:off -vsyslog:off -vfile:info \
+                    --log-file=$prog_name.log \
+                    --remote=db:OVN_Northbound,NB_Global,connections \
+                    --private-key=db:OVN_Northbound,SSL,private_key \
+                    --certificate=db:OVN_Northbound,SSL,certificate \
+                    --ca-cert=db:OVN_Northbound,SSL,ca_cert \
+                    --ssl-protocols=db:OVN_Northbound,SSL,ssl_protocols \
+                    --ssl-ciphers=db:OVN_Northbound,SSL,ssl_ciphers \
+                    --remote=p$OVN_NB_DB ovnnb.db
+                pid=`cat $sandbox_name/$prog_name.pid`
+                mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
 
+                # Southbound db server
+                prog_name='ovsdb-server-sb'
+                run_service $prog_name ovsdb-server --detach --no-chdir \
+                    --pidfile=$prog_name.pid \
+                    --unixctl=$prog_name.ctl \
+                    -vconsole:off -vsyslog:off -vfile:info \
+                    --log-file=$prog_name.log \
+                    --remote=db:OVN_Southbound,SB_Global,connections \
+                    --private-key=db:OVN_Southbound,SSL,private_key \
+                    --certificate=db:OVN_Southbound,SSL,certificate \
+                    --ca-cert=db:OVN_Southbound,SSL,ca_cert \
+                    --ssl-protocols=db:OVN_Southbound,SSL,ssl_protocols \
+                    --ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers \
+                    --remote=p$OVN_SB_DB ovnsb.db
+                pid=`cat $sandbox_name/$prog_name.pid`
+                mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
+            else
+                # Northbound db server
+                prog_name='ovsdb-server-nb'
+                run_service $prog_name ovsdb-server --detach --no-chdir \
+                    --pidfile=$prog_name.pid \
+                    --unixctl=$prog_name.ctl \
+                    -vconsole:off -vsyslog:off -vfile:info \
+                    --log-file=$prog_name.log \
+                    --remote=p$OVN_NB_DB \
+                    conf-nb.db ovnnb.db
+                pid=`cat $sandbox_name/$prog_name.pid`
+                mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
+
+                # Southbound db server
+                prog_name='ovsdb-server-sb'
+                run_service $prog_name ovsdb-server --detach --no-chdir \
+                    --pidfile=$prog_name.pid \
+                    --unixctl=$prog_name.ctl \
+                    -vconsole:off -vsyslog:off -vfile:info \
+                    --log-file=$prog_name.log \
+                    --remote="p$OVN_SB_DB" \
+                    --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+                    conf-sb.db ovnsb.db
+                pid=`cat $sandbox_name/$prog_name.pid`
+                mv $sandbox_name/$prog_name.ctl $sandbox_name/$prog_name.$pid.ctl
+            fi
         fi
     else
         touch "$sandbox"/.conf.db.~lock~
@@ -697,19 +738,35 @@ EOF
 
     # Initialize database.
     if $controller ; then
-        init_ovsdb_server "ovsdb-server-nb" $OVN_NB_DB
-        init_ovsdb_server "ovsdb-server-sb" $OVN_SB_DB
+        if $enable_ssl ; then
+            tar -xzvf certs.tar.gz
+            abs_path=`pwd`/certs
+            ovn-nbctl set-ssl $abs_path/ovnnb-privkey.pem  $abs_path/ovnnb-cert.pem \
+                $abs_path/cacert.pem
+            ovn-nbctl set-connection pssl:6641:127.0.0.1
+            ovn-sbctl set-ssl $abs_path/ovnsb-privkey.pem  $abs_path/ovnsb-cert.pem \
+                $abs_path/cacert.pem
+            ovn-sbctl set-connection pssl:6642:$CON_IP
+            ovn-sbctl set conn . inactivity_probe=0
+        else
+            init_ovsdb_server "ovsdb-server-nb" $OVN_NB_DB
+            init_ovsdb_server "ovsdb-server-sb" $OVN_SB_DB
 
-        ovs-vsctl --db=$OVN_SB_DB --no-wait \
-            -- set open_vswitch .  manager_options=@uuid \
-            -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
+            ovs-vsctl --db=$OVN_SB_DB --no-wait \
+                -- set open_vswitch .  manager_options=@uuid \
+                -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
+        fi
 
     else
         init_ovsdb_server "ovsdb-server" unix:"$sandbox"/db.sock
         run ovs-vsctl --no-wait set open_vswitch . system-type="sandbox"
 
         if $ovn ; then
-            OVN_REMOTE="tcp:$CON_IP:6640"
+            if $enable_ssl ; then
+                OVN_REMOTE="ssl:$CON_IP:6642"
+            else
+                OVN_REMOTE="tcp:$CON_IP:6640"
+            fi
 
             ip_addr_add $host_ip $device
             SANDBOX_BIND_IP=$host_ip
@@ -759,9 +816,19 @@ function start_ovn {
               --ovnsb-db=$OVN_SB_DB
     else
         if $ovn ; then
-            run_service ovn-controller ovn-controller --detach --no-chdir \
-                    --pidfile \
-                    -vconsole:off -vsyslog:off -vfile:info --log-file
+            if [$enable_ssl = true]; then
+                tar -xzvf certs.tar.gz
+                abs_path=`pwd`/certs
+                run_service ovn-controller ovn-controller \
+                  --private-key=$abs_path/ovn-controller-privkey.pem \
+                  --certificate=$abs_path/ovn-controller-cert.pem \
+                  --ca-cert=$abs_path/cacert.pem --detach --no-chdir \
+                  --pidfile -vconsole:off -vsyslog:off -vfile:info --log-file
+            else
+                run_service ovn-controller ovn-controller --detach --no-chdir \
+                  --pidfile \
+                  -vconsole:off -vsyslog:off -vfile:info --log-file
+            fi
         fi
     fi
 }

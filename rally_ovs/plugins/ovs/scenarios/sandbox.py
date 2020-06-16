@@ -131,6 +131,7 @@ class SandboxScenario(scenario.OvsScenario):
         start_cidr = sandbox_create_args.get("start_cidr")
         net_dev = sandbox_create_args.get("net_dev", "eth0")
         tag = sandbox_create_args.get("tag", "")
+        ssl = sandbox_create_args.get("enable_ssl", False)
 
         install_method = self.install_method
         LOG.info("-------> Create sandbox  method: %s" % install_method)
@@ -166,10 +167,16 @@ class SandboxScenario(scenario.OvsScenario):
 
             cmds = []
             for host_ip in host_ip_list:
-                cmd = "./ovs-sandbox.sh --ovn --controller-ip %s \
-                             --host-ip %s/%d --device %s" % \
-                         (controller_ip, host_ip, sandbox_cidr.prefixlen,
-                                net_dev)
+                if ssl:
+                    cmd = "./ovs-sandbox.sh --ovn --controller-ip %s \
+                                 --host-ip %s/%d --device %s --ssl" % \
+                          (controller_ip, host_ip, sandbox_cidr.prefixlen,
+                           net_dev)
+                else:
+                    cmd = "./ovs-sandbox.sh --ovn --controller-ip %s \
+                                 --host-ip %s/%d --device %s" % \
+                             (controller_ip, host_ip, sandbox_cidr.prefixlen,
+                                    net_dev)
                 cmds.append(cmd)
 
                 sandboxes["sandbox-%s" % host_ip] = tag
