@@ -1,6 +1,8 @@
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 # This will prevent questions from being asked during the install
 ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update && apt-get install -y gnupg
 
 COPY sources.list /etc/apt/
 
@@ -32,6 +34,7 @@ RUN apt-get install -y --no-install-recommends \
             automake \
             libtool \
             uuid-runtime \
+            linux-headers-$(uname -r) \
     && apt-get clean
 
 # DO NOT commit; the following are for debugging purpose

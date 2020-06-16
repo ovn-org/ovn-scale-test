@@ -10,6 +10,7 @@ RUN apt-get install -y --no-install-recommends \
             libpq-dev \
             wget \
             python-pip \
+            python-setuptools \
 	    openssh-server \
     && apt-get clean
 
