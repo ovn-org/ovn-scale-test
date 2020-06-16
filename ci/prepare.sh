@@ -86,6 +86,7 @@ EOF
 # Install python dependencies
 $OVNSUDO apt-get install -y python-pip
 $OVNSUDO pip install --upgrade pip
+$OVNSUDO pip install --upgrade pyopenssl
 $OVNSUDO pip install -U docker-py netaddr
 $OVNSUDO apt-get remove -y ansible
 $OVNSUDO pip install ansible==2.0.2.0
