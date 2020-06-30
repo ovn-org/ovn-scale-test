@@ -102,7 +102,9 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                        lport_ip_shift=1):
         lports = []
         for lswitch in lswitches:
-            lports += self._create_switch_lports(lswitch, lport_create_args)
+            lports += self._create_switch_lports(lswitch, lport_create_args,
+                                                 lport_amount,
+                                                 lport_ip_shift)
         return lports
 
     def _create_switch_lports(self, lswitch, lport_create_args = [],
