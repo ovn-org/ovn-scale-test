@@ -92,7 +92,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
 
     def _wait_chassis(self, sbctl_conn, chassis_name, max_timeout_s):
         for i in range(0, max_timeout_s * 10):
-            if sbctl_conn.chassis_bound(chassis_name):
+            if sbctl_conn.chassis_bound(chassis_name, ["--no-leader-only"]):
                 break
             time.sleep(0.1)
 

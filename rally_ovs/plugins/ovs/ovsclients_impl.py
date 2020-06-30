@@ -421,7 +421,7 @@ class OvnSbctl(OvsClient):
             self.run("sync", opts)
             self.batch_mode = batch_mode
 
-        def chassis_bound(self, chassis_name):
+        def chassis_bound(self, chassis_name, opts=[]):
             batch_mode = self.batch_mode
             if batch_mode:
                 self.flush()
