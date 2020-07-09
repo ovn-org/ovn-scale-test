@@ -641,3 +641,46 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
         ovn_nbctl = self._get_ovn_controller(self.install_method)
         return ovn_nbctl.get("Address_Set", set_name, 'addresses')
+
+    def runCmd(self, ssh, cmd="", pid_opt="", pid="", background_opt=False):
+        ssh.enable_batch_mode(False)
+
+        if pid_opt and pid:
+            cmd = cmd + " " + pid_opt + " " + pid
+
+        if background_opt:
+            cmd = cmd + " &"
+
+        stdout = StringIO()
+        ssh.run(cmd, stdout=stdout)
+        return stdout.getvalue().rstrip()
+
+    def runFarmCmd(self, sandbox, cmd="", pid_opt="", pid_proc_name="",
+                   background_opt=False):
+        LOG.info("running %s on %s" % (cmd, sandbox["name"]))
+
+        ssh = self.farm_clients(sandbox["farm"], "ovs-ssh")
+        ssh.set_sandbox(sandbox["name"], self.install_method,
+                        sandbox["host_container"])
+
+        if pid_proc_name:
+            pid = self.runCmd(ssh, "pidof -s " + pid_proc_name)
+        else:
+            pid = ""
+
+        self.runCmd(ssh, cmd, pid_opt, pid, background_opt)
+
+    def runControllerCmd(self, cmd="", pid_opt="", pid_proc_name="",
+                         background_opt=False):
+        LOG.info("running %s on controller-sandbox" % cmd)
+
+        ssh = self.controller_client("ovs-ssh")
+        ssh.set_sandbox("controller-sandbox", self.install_method,
+                        self.context["controller"]["host_container"])
+
+        if pid_proc_name:
+            pid = self.runCmd(ssh, "pidof -s " + pid_proc_name)
+        else:
+            pid = ""
+
+        self.runCmd(ssh, cmd, pid_opt, pid, background_opt)

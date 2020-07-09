@@ -1,6 +1,8 @@
 {% set farm_nodes = farm_nodes or 1 %}
 {% set networks = networks or 1 %}
 {% set ports_per_network = ports_per_network or 1 %}
+{% set cmd_start_iter = cmd_start_iter or -1 %}
+{% set cmd_stop_iter = cmd_stop_iter or -1 %}
 {
     "version": 2,
     "title": "OpenShift switch per node workload",
@@ -113,7 +115,23 @@
                         },
                         "name_space_size": 2,
                         "network_policy_size": 2,
-                        "create_acls": true
+                        "create_acls": true,
+                        "ext_cmd_args": {
+                            "start_cmd" : {
+                                "iter" : {{cmd_start_iter}},
+                                "cmd": "perf record -g -e cpu-cycles -F 99 -o ovn-perf.data",
+                                "background_opt": true,
+                                "controller_pid_name": "ovn-northd",
+                                "farm_pid_name": "ovn-controller",
+                                "pid_opt": "-p",
+                                "num_sandboxes": {{farm_nodes}}
+                            },
+                            "stop_cmd" : {
+                                "iter" : {{cmd_stop_iter}},
+                                "cmd": "killall perf",
+                                "num_sandboxes": {{farm_nodes}}
+                            }
+                        }
                     },
                     "runner": {
                         "type": "serial",
