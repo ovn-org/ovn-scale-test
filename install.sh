@@ -280,7 +280,16 @@ install_required_sw () {
         fi
     elif have_command yum; then
         # RHEL/CentOS
-        missing=$(which_missing_packages gcc libffi-devel python-devel openssl-devel gmp-devel libxml2-devel libxslt-devel postgresql-devel redhat-rpm-config git wget)
+        missing=$(which_missing_packages gcc libffi-devel openssl-devel gmp-devel libxml2-devel libxslt-devel postgresql-devel redhat-rpm-config git wget)
+        if yum info python-devel
+        then
+            missing="$missing $(which_missing_packages python-devel)"
+        elif yum info platform-python-devel
+        then
+            missing="$missing $(which_missing_packages platform-python-devel)"
+        else
+            missing="$missing $(which_missing_packages python-devel)"
+        fi
 
         if [ "$ASKCONFIRMATION" -eq 0 ]; then
             pkg_manager="yum install -y"
