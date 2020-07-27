@@ -52,9 +52,11 @@ class SandboxEngine(engine.Engine):
                            stdin="%s:%s" % (user, server.password))
 
 
-    def _put_file(self, server, filename):
+    def _put_file(self, server, filename, mode=None):
         localpath = get_script_path(filename)
         server.ssh.put_file(localpath, filename)
+        if mode:
+            server.ssh.run("chmod %s %s" % (mode, filename))
 
 
 
@@ -71,8 +73,8 @@ class SandboxEngine(engine.Engine):
         https_proxy = self.config.get("https_proxy", None)
 
         ovs_server = get_updated_server(server, user=ovs_user)
-        self._put_file(ovs_server, "install.sh")
-        self._put_file(ovs_server, "ovs-sandbox.sh")
+        self._put_file(ovs_server, "install.sh", "755")
+        self._put_file(ovs_server, "ovs-sandbox.sh", "755")
 
 
         cmds = []
