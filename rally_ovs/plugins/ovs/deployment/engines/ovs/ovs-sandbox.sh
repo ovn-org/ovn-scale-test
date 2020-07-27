@@ -271,8 +271,8 @@ else
         echo "can't find vswitch.ovsschema, please specify --schema" >&2
         exit 1
     fi
-    ovnsb_schema=`dirname $schema`/ovn-sb.ovsschema
-    ovnnb_schema=`dirname $schema`/ovn-nb.ovsschema
+    ovnsb_schema=`dirname $schema`/../ovn/ovn-sb.ovsschema
+    ovnnb_schema=`dirname $schema`/../ovn/ovn-nb.ovsschema
 fi
 
 
@@ -575,6 +575,10 @@ OVS_RUNDIR=$sandbox; export OVS_RUNDIR
 OVS_LOGDIR=$sandbox; export OVS_LOGDIR
 OVS_DBDIR=$sandbox; export OVS_DBDIR
 OVS_SYSCONFDIR=$sandbox; export OVS_SYSCONFDIR
+OVN_RUNDIR=$sandbox; export OVN_RUNDIR
+OVN_LOGDIR=$sandbox; export OVN_LOGDIR
+OVN_DBDIR=$sandbox; export OVN_DBDIR
+OVN_SYSCONFDIR=$sandbox; export OVN_SYSCONFDIR
 EOF
 
 . $sandbox_name/sandbox.rc

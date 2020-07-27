@@ -5,8 +5,9 @@ from rally.deployment.serverprovider import provider
 
 OVS_REPO = "https://github.com/openvswitch/ovs.git"
 OVS_BRANCH = "master"
+OVN_REPO = "https://github.com/ovn-org/ovn.git"
+OVN_BRANCH = "master"
 OVS_USER = "rally"
-
 
 def get_script(name):
     return open(os.path.join(os.path.abspath(
