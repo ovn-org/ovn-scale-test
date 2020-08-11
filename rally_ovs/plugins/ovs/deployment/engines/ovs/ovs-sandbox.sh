@@ -708,6 +708,8 @@ EOF
             -- set open_vswitch .  manager_options=@uuid \
             -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
 
+        ovn-nbctl set nb_global . options:northd_probe_interval=0
+
     else
         init_ovsdb_server "ovsdb-server" unix:"$sandbox"/db.sock
         run ovs-vsctl --no-wait set open_vswitch . system-type="sandbox"
