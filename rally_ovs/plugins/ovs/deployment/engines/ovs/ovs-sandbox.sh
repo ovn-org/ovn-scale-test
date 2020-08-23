@@ -724,6 +724,7 @@ EOF
                 -- set open_vswitch . external-ids:system-id="$OVN_UUID" \
                                       external-ids:ovn-remote="$OVN_REMOTE" \
                                       external-ids:ovn-remote-probe-interval=0 \
+                                      external-ids:ovn-openflow-probe-interval=0 \
                                       external-ids:ovn-bridge="br-int" \
                                       external-ids:ovn-encap-type="geneve" \
                                       external-ids:ovn-encap-ip="`get_ip_from_cidr $host_ip`"
