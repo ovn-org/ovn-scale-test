@@ -437,6 +437,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
             ovs_vsctl.set_sandbox(sb_name, self.install_method,
                                   sandbox['host_container'])
+            ovs_vsctl.enable_batch_mode()
             for lport in lports:
                 port_name = lport["name"]
                 LOG.info("bind %s to %s on %s" % (port_name, sb_name, farm))
@@ -447,6 +448,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                                                   "iface-status":"active"}),
                                 ('admin_state', 'up'))
             ovs_vsctl.flush()
+            ovs_vsctl.enable_batch_mode(False)
 
     @atomic.action_timer("ovn.bind_internal_vm")
     def _bind_ovs_internal_vm(self, lport_sbs):
