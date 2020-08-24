@@ -271,8 +271,8 @@ else
         echo "can't find vswitch.ovsschema, please specify --schema" >&2
         exit 1
     fi
-    ovnsb_schema=`dirname $schema`/ovn-sb.ovsschema
-    ovnnb_schema=`dirname $schema`/ovn-nb.ovsschema
+    ovnsb_schema=`dirname $schema`/../ovn/ovn-sb.ovsschema
+    ovnnb_schema=`dirname $schema`/../ovn/ovn-nb.ovsschema
 fi
 
 
@@ -575,6 +575,10 @@ OVS_RUNDIR=$sandbox; export OVS_RUNDIR
 OVS_LOGDIR=$sandbox; export OVS_LOGDIR
 OVS_DBDIR=$sandbox; export OVS_DBDIR
 OVS_SYSCONFDIR=$sandbox; export OVS_SYSCONFDIR
+OVN_RUNDIR=$sandbox; export OVN_RUNDIR
+OVN_LOGDIR=$sandbox; export OVN_LOGDIR
+OVN_DBDIR=$sandbox; export OVN_DBDIR
+OVN_SYSCONFDIR=$sandbox; export OVN_SYSCONFDIR
 EOF
 
 . $sandbox_name/sandbox.rc
@@ -704,6 +708,8 @@ EOF
             -- set open_vswitch .  manager_options=@uuid \
             -- --id=@uuid create Manager target="$OVSDB_REMOTE" inactivity_probe=0
 
+        ovn-nbctl set nb_global . options:northd_probe_interval=0
+
     else
         init_ovsdb_server "ovsdb-server" unix:"$sandbox"/db.sock
         run ovs-vsctl --no-wait set open_vswitch . system-type="sandbox"
@@ -718,9 +724,12 @@ EOF
                 -- set open_vswitch . external-ids:system-id="$OVN_UUID" \
                                       external-ids:ovn-remote="$OVN_REMOTE" \
                                       external-ids:ovn-remote-probe-interval=0 \
+                                      external-ids:ovn-openflow-probe-interval=0 \
                                       external-ids:ovn-bridge="br-int" \
                                       external-ids:ovn-encap-type="geneve" \
-                                      external-ids:ovn-encap-ip="`get_ip_from_cidr $host_ip`"
+                                      external-ids:ovn-encap-ip="`get_ip_from_cidr $host_ip`" \
+                                      other_config:n-handler-threads=1 \
+                                      other_config:n-revalidator-threads=1
 
             run ovs-vsctl --no-wait \
                 -- --may-exist add-br br-int \

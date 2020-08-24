@@ -25,6 +25,8 @@ from rally_ovs.plugins.ovs.deployment.engines import get_updated_server
 from rally_ovs.plugins.ovs.deployment.engines import OVS_USER
 from rally_ovs.plugins.ovs.deployment.engines import OVS_REPO
 from rally_ovs.plugins.ovs.deployment.engines import OVS_BRANCH
+from rally_ovs.plugins.ovs.deployment.engines import OVN_REPO
+from rally_ovs.plugins.ovs.deployment.engines import OVN_BRANCH
 
 
 
@@ -52,9 +54,11 @@ class SandboxEngine(engine.Engine):
                            stdin="%s:%s" % (user, server.password))
 
 
-    def _put_file(self, server, filename):
+    def _put_file(self, server, filename, mode=None):
         localpath = get_script_path(filename)
         server.ssh.put_file(localpath, filename)
+        if mode:
+            server.ssh.run("chmod %s %s" % (mode, filename))
 
 
 
@@ -64,15 +68,18 @@ class SandboxEngine(engine.Engine):
     def _install_ovs(self, server):
         ovs_repo = self.config.get("ovs_repo", OVS_REPO)
         ovs_branch = self.config.get("ovs_branch", OVS_BRANCH)
+        ovs_repo_action = self.config.get("ovs_repo_action", "none")
+        ovn_repo = self.config.get("ovn_repo", OVN_REPO)
+        ovn_branch = self.config.get("ovn_branch", OVN_BRANCH)
+        ovn_repo_action = self.config.get("ovn_repo_action", "none")
         ovs_user = self.config.get("ovs_user", OVS_USER)
-        repo_action = self.config.get("repo_action", "")
 
         http_proxy = self.config.get("http_proxy", None)
         https_proxy = self.config.get("https_proxy", None)
 
         ovs_server = get_updated_server(server, user=ovs_user)
-        self._put_file(ovs_server, "install.sh")
-        self._put_file(ovs_server, "ovs-sandbox.sh")
+        self._put_file(ovs_server, "install.sh", "755")
+        self._put_file(ovs_server, "ovs-sandbox.sh", "755")
 
 
         cmds = []
@@ -86,7 +93,10 @@ EOF''' % (http_proxy, https_proxy)
             cmds.append(". proxy_env.sh")
 
 
-        cmd = "./install.sh %s %s %s %s" % (ovs_repo, ovs_branch, ovs_user, repo_action)
+        cmd = "./install.sh %s %s %s %s %s %s %s" % (
+            ovs_repo, ovs_branch, ovs_repo_action,
+            ovn_repo, ovn_branch, ovn_repo_action,
+            ovs_user)
         cmds.append(cmd)
         print("install ovs:", cmds)
         ovs_server.ssh.run("\n".join(cmds),
