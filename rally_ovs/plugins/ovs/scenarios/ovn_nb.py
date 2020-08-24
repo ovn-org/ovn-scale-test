@@ -27,12 +27,12 @@ class OvnNorthbound(ovn.OvnScenario):
 
     @scenario.configure()
     def create_routed_network(self, lswitch_create_args = None,
-                              networks_per_router = None,
+                              lnetwork_create_args = None,
                               lport_create_args = None,
                               port_bind_args = None,
                               create_mgmt_port = True):
         self._create_routed_network(lswitch_create_args,
-                                    networks_per_router,
+                                    lnetwork_create_args,
                                     lport_create_args,
                                     port_bind_args,
                                     create_mgmt_port)

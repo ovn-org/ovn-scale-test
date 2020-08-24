@@ -145,6 +145,17 @@ class OvnNbctl(OvsClient):
             self.run("lr-add", args=params)
             return {"name":name}
 
+        def lrouter_route_add(self, lrouter, dest, gw, policy=None):
+            params = [lrouter, dest, gw]
+            if policy:
+                opts = ["--policy={}".format(policy)]
+            else:
+                opts = []
+            self.run("lr-route-add", opts=opts, args=params)
+
+        def lrouter_nat_add(self, lrouter, nat_type, external_ip, logical_ip):
+            params = [lrouter, nat_type, external_ip, logical_ip]
+            self.run("lr-nat-add", args=params)
 
         def lswitch_add(self, name, other_cfg={}):
             params = [name]
@@ -180,11 +191,11 @@ class OvnNbctl(OvsClient):
             params = [name]
             self.run("lr-del", args=params)
 
-        def lswitch_port_add(self, lswitch, name, mac='', ip='', gw=''):
+        def lswitch_port_add(self, lswitch, name, mac='', ip='', gw='', ext_gw=None):
             params =[lswitch, name]
             self.run("lsp-add", args=params)
 
-            return {"name":name, "mac":mac, "ip":ip, "gw":gw}
+            return {"name":name, "mac":mac, "ip":ip, "gw":gw, "ext-gw":ext_gw}
 
 
         def lport_list(self, lswitch):

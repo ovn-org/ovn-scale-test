@@ -141,15 +141,18 @@ def get_lswitch_info(info):
     for line in info.splitlines():
         tokens = line.strip().split(" ")
         if tokens[0] == "switch":
-            start_cidr = re.sub("\(lswitch_|\)", "", tokens[2])
-            if len(start_cidr):
-                cidr = netaddr.IPNetwork(start_cidr)
+            if tokens[2].startswith('(lswitch_'):
+                start_cidr = re.sub("\(lswitch_|\)", "", tokens[2])
+                if len(start_cidr):
+                    cidr = netaddr.IPNetwork(start_cidr)
+                else:
+                    cidr = ""
+                name = tokens[2][1:-1]
+                lswitch = {"name":name, "uuid":tokens[1], "lports":[], "cidr":cidr}
+                lswitches.append(lswitch)
             else:
-                cidr = ""
-            name = tokens[2][1:-1]
-            lswitch = {"name":name, "uuid":tokens[1], "lports":[], "cidr":cidr}
-            lswitches.append(lswitch)
-        elif tokens[0] == "port":
+                lswitch = None
+        elif tokens[0] == "port" and lswitch:
             name = tokens[1][1:-1]
             lswitch["lports"].append({"name":name})
 

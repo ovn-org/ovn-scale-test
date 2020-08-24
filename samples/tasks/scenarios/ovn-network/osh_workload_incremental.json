@@ -1,6 +1,8 @@
 {% set max_farm_nodes = max_farm_nodes or 1 %}
 {% set farm_nodes = farm_nodes or 1 %}
 {% set ports_per_network = ports_per_network or 1 %}
+{% set gw_router = gw_router or False %}
+{% set gw_batch_ops = gw_batch_ops or False %}
 {% set ovn_monitor_all = ovn_monitor_all or false %}
 {% set ovn_cluster_db = ovn_cluster_db or false %}
 {% set ovn_central_ip = ovn_central_ip or "192.16.0.1" %}
@@ -176,18 +178,25 @@
                             "batch_size": {{node_batch_size}}
                         },
                         "lswitch_create_args": {
-                            "start_cidr": "1.0.0.0/16"
+                            "start_cidr": "16.0.0.0/16"
                         },
                         "lport_create_args": {
                             "port_security" : true
+                        },
+                        "lnetwork_create_args": {
+                            "networks_per_router": {{networks}},
+                            "start_gw_cidr": "2.0.0.0/16",
+                            "start_ext_cidr": "3.0.0.0/16",
+                            "gw_router_per_network": {{gw_router}},
+                            "batch": {{gw_batch_ops}},
+                            "cluster_cidr": "16.0.0.0/4"
                         },
                         "port_bind_args": {
                             "internal" : true,
                             "wait_up" : true,
                             "wait_sync" : "ping",
                             "batch" : false
-                        },
-                        "networks_per_router": {{farm_nodes}}
+                        }
                     },
                     "runner": {
                         "type": "serial",

@@ -99,16 +99,18 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
     @atomic.action_timer("ovn.create_lport")
     def _create_lports(self, lswitches, lport_create_args = [], lport_amount=1,
-                       lport_ip_shift=1):
+                       lport_ip_shift=1, ext_cidr=None):
         lports = []
-        for lswitch in lswitches:
+        for idx, lswitch in enumerate(lswitches):
             lports += self._create_switch_lports(lswitch, lport_create_args,
                                                  lport_amount,
-                                                 lport_ip_shift)
+                                                 lport_ip_shift,
+                                                 ext_cidr=ext_cidr.next(idx))
         return lports
 
     def _create_switch_lports(self, lswitch, lport_create_args = [],
-                              lport_amount=1, lport_ip_shift = 1):
+                              lport_amount=1, lport_ip_shift = 1,
+                              ext_cidr = None):
         LOG.info("create %d lports on lswitch %s" % \
                             (lport_amount, lswitch["name"]))
 
@@ -149,8 +151,9 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             mac = utils.get_random_mac(base_mac)
             ip_mask = '{}/{}'.format(ip, network_cidr.prefixlen)
             gw = str(self._get_gw_ip(network_cidr))
+            ext_gw = str(self._get_gw_ip(ext_cidr, 2)) if ext_cidr else None
             lport = ovn_nbctl.lswitch_port_add(lswitch["name"], name, mac,
-                                               ip_mask, gw)
+                                               ip_mask, gw, ext_gw)
 
             ovn_nbctl.lport_set_addresses(name, [mac, ip])
             if port_security:
@@ -301,6 +304,16 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                                                               lrouters,
                                                               networks_per_router)
 
+    @atomic.action_timer("ovn_network.connect_gw_routers")
+    def _connect_networks_to_gw_routers(self, lnetworks, lrouters, sandboxes,
+                                        lnetwork_args, networks_per_router):
+        return super(OvnScenario, self)._connect_networks_to_gw_routers(
+            lnetworks, lrouters, sandboxes, lnetwork_args, networks_per_router)
+
+    @atomic.action_timer("ovn_network.add_gw_routers_routes_nat")
+    def _connect_gw_routers_routes(self, dps, lnetwork_args):
+        super(OvnScenario, self)._connect_gw_routers_routes(dps, lnetwork_args)
+
     @atomic.action_timer("ovn_network.create_phynet")
     def _create_phynet(self, lswitches, physnet, batch):
         LOG.info("Create phynet method: %s" % self.install_method)
@@ -336,7 +349,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         return lswitches
 
     def _create_routed_network(self, lswitch_create_args = {},
-                               networks_per_router = {},
+                               lnetwork_create_args = {},
                                lport_create_args = {},
                                port_bind_args = {},
                                create_mgmt_port = True):
@@ -346,6 +359,12 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
         lswitch_args = copy.copy(lswitch_create_args)
         amount = lswitch_create_args.get('amount', 1)
+
+        sandboxes = [
+            sandboxes[i % len(sandboxes)]
+                for i in range(iteration * amount, (iteration + 1) * amount)
+        ]
+
         start_cidr = lswitch_create_args.get("start_cidr", "")
         if start_cidr:
             start_cidr = netaddr.IPNetwork(start_cidr)
@@ -353,18 +372,44 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             lswitch_args["start_cidr"] = str(cidr)
         lswitches = self._create_lswitches(lswitch_args)
 
+        networks_per_router = lnetwork_create_args.get('networks_per_router', 0)
         if networks_per_router:
             self._connect_networks_to_routers(lswitches, lrouters,
                                               networks_per_router)
 
+        port_ext_cidr = None
+        if lnetwork_create_args.get('gw_router_per_network', False):
+            lnetwork_args = copy.copy(lnetwork_create_args)
+            start_gw_cidr = lnetwork_create_args.get("start_gw_cidr", "")
+            if start_gw_cidr:
+                start_gw_cidr = netaddr.IPNetwork(start_gw_cidr)
+                cidr = start_gw_cidr.next(iteration * amount)
+                lnetwork_args["start_gw_cidr"] = cidr
+
+            start_ext_cidr = lnetwork_create_args.get("start_ext_cidr", "")
+            if start_ext_cidr:
+                start_ext_cidr = netaddr.IPNetwork(start_ext_cidr)
+                cidr = start_ext_cidr.next(iteration * amount)
+                lnetwork_args["start_ext_cidr"] = cidr
+                port_ext_cidr = cidr
+            dps = \
+                self._connect_networks_to_gw_routers(lswitches, lrouters,
+                                                     sandboxes, lnetwork_args,
+                                                     networks_per_router)
+            ext_switches = [ext_switch for _, _, _, _, ext_switch in dps]
+            self._create_phynet(ext_switches,
+                                lnetwork_args.get('physnet', "providernet"),
+                                1)
+
+            self._connect_gw_routers_routes(dps, lnetwork_args)
+        else:
+            start_ext_cidr = None
+
         if create_mgmt_port == False:
             return
 
-        sandboxes = [
-            sandboxes[i % len(sandboxes)]
-                for i in range(iteration * amount, (iteration + 1) * amount)
-        ]
-        lports = self._create_lports(lswitches, lport_create_args)
+        lports = self._create_lports(lswitches, lport_create_args,
+                                     ext_cidr=port_ext_cidr)
         self._bind_ports_and_wait(lports, sandboxes, port_bind_args)
 
     def _bind_ports_and_wait(self, lports, sandboxes, port_bind_args):
@@ -414,6 +459,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 port_name = lport["name"]
                 port_mac = lport["mac"]
                 port_ip = lport["ip"]
+                port_gw = lport["gw"]
                 # TODO: some containers don't have ethtool installed
                 if not sandbox["host_container"]:
                     # Disable tx offloading on the port
@@ -430,9 +476,9 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                     p=port_name)
                 )
 
-                # Add route for multicast traffic
-                ovs_ssh.run('ip netns exec {p} ip route add 224/4 dev {p}'.format(
-                    p=port_name)
+                # Add default route.
+                ovs_ssh.run('ip netns exec {p} ip route add default via {gw}'.format(
+                    p=port_name, gw=port_gw)
                 )
                 ovs_ssh.flush()
 
@@ -525,11 +571,16 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                             sandbox['host_container'])
         ovs_ssh.enable_batch_mode(False)
 
+        if lport.get("ext-gw"):
+            dest = lport["ext-gw"]
+        else:
+            dest = lport["gw"]
+
         start_time = datetime.now()
         while True:
             try:
                 ovs_ssh.run("ip netns exec {} ping -q -c 1 -W 0.1 {}".format(
-                                lport["name"], lport["gw"]))
+                                lport["name"], dest))
                 break
             except:
                 pass
