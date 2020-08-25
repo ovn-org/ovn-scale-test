@@ -105,7 +105,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             lports += self._create_switch_lports(lswitch, lport_create_args,
                                                  lport_amount,
                                                  lport_ip_shift,
-                                                 ext_cidr=ext_cidr.next(idx))
+                                                 ext_cidr.next(idx) if ext_cidr else None)
         return lports
 
     def _create_switch_lports(self, lswitch, lport_create_args = [],
