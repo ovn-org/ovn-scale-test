@@ -539,6 +539,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
     @atomic.action_timer("ovn_network.bind_port")
     def _bind_ports(self, lports, sandboxes, port_bind_args):
         internal = port_bind_args.get("internal", False)
+        internal_vm = port_bind_args.get("internal_vm", True)
         batch = port_bind_args.get("batch", True)
         sandbox_num = len(sandboxes)
         lport_num = len(lports)
@@ -563,7 +564,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
                 j += 1
 
         self._bind_ovs_port(lport_sbs, internal)
-        if internal:
+        if internal and internal_vm:
             self._bind_ovs_internal_vm(lport_sbs)
 
     def _ping_port(self, lport, wait_timeout_s):
