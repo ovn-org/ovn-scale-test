@@ -19,6 +19,7 @@ import pipes
 from io import StringIO
 from rally_ovs.plugins.ovs.ovsclients import *
 from rally_ovs.plugins.ovs.utils import get_ssh_from_credential
+from rally_ovs.plugins.ovs.utils import is_root_credential
 
 LOG = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class OvnNbctl(OvsClient):
     class _OvnNbctl(DdCtlMixin):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
+            self.is_root = is_root_credential(credential)
             self.context = {}
             self.sandbox = None
             self.batch_mode = False
@@ -66,16 +68,17 @@ class OvnNbctl(OvsClient):
                 return
 
             if self.sandbox:
+                sudo_s = "sudo " if not self.is_root else ""
                 cmd_prefix = []
                 if self.install_method == "sandbox":
                     self.cmds.append(". %s/sandbox.rc" % self.sandbox)
                 elif self.install_method == "docker":
-                    cmd_prefix = ["sudo docker exec ovn-north-database"]
+                    cmd_prefix = [sudo_s + "docker exec ovn-north-database"]
                 elif self.install_method == "physical":
                     if self.host_container:
-                        cmd_prefix = ["sudo docker exec " + self.host_container]
+                        cmd_prefix = [sudo_s + "docker exec " + self.host_container]
                     else:
-                        cmd_prefix = ["sudo"]
+                        cmd_prefix = [sudo_s]
 
                 if cmd == "exit":
                     if self.socket:
@@ -103,16 +106,17 @@ class OvnNbctl(OvsClient):
 
             run_cmds = []
             if self.sandbox:
+                sudo_s = "sudo " if not self.is_root else ""
                 if self.install_method == "sandbox":
                     run_cmds.append(". %s/sandbox.rc" % self.sandbox)
                     run_cmds.append("ovn-nbctl" + " ".join(self.cmds))
                 elif self.install_method == "docker":
-                    run_cmds.append("sudo docker exec ovn-north-database ovn-nbctl " + " ".join(self.cmds))
+                    run_cmds.append(sudo_s + "docker exec ovn-north-database ovn-nbctl " + " ".join(self.cmds))
                 elif self.install_method == "physical":
                     if self.host_container:
-                        cmd_prefix = "sudo docker exec " + self.host_container
+                        cmd_prefix = sudo_s + "docker exec " + self.host_container
                     else:
-                        cmd_prefix = "sudo"
+                        cmd_prefix = sudo_s
 
                     if self.socket:
                         ovn_cmd = "ovn-nbctl -u " + self.socket
@@ -333,6 +337,7 @@ class OvnSbctl(OvsClient):
     class _OvnSbctl(DdCtlMixin):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
+            self.is_root = is_root_credential(credential)
             self.context = {}
             self.sandbox = None
             self.batch_mode = False
@@ -357,16 +362,17 @@ class OvnSbctl(OvsClient):
                 return
 
             if self.sandbox:
+                sudo_s = "sudo " if not self.is_root else ""
                 cmd_prefix = []
                 if self.install_method == "sandbox":
                     self.cmds.append(". %s/sandbox.rc" % self.sandbox)
                 elif self.install_method == "docker":
-                    cmd_prefix = ["sudo docker exec ovn-north-database"]
+                    cmd_prefix = [sudo_s + "docker exec ovn-north-database"]
                 elif self.install_method == "physical":
                     if self.host_container:
-                        cmd_prefix = ["sudo docker exec " + self.host_container]
+                        cmd_prefix = [sudo_s + "docker exec " + self.host_container]
                     else:
-                        cmd_prefix = ["sudo"]
+                        cmd_prefix = [sudo_s]
 
                 cmd = itertools.chain(cmd_prefix, [self.sbctl_cmd], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
@@ -383,16 +389,17 @@ class OvnSbctl(OvsClient):
 
             run_cmds = []
             if self.sandbox:
+                sudo_s = "sudo " if not self.is_root else ""
                 if self.install_method == "sandbox":
                     run_cmds.append(". %s/sandbox.rc" % self.sandbox)
                     run_cmds.append(self.sbctl_cmd + " ".join(self.cmds))
                 elif self.install_method == "docker":
-                    run_cmds.append("sudo docker exec ovn-north-database " + self.sbctl_cmd + " ".join(self.cmds))
+                    run_cmds.append(sudo_s + "docker exec ovn-north-database " + self.sbctl_cmd + " ".join(self.cmds))
                 elif self.install_method == "physical":
                     if self.host_container:
-                        run_cmds.append("sudo docker exec " + self.host_container + " " + self.sbctl_cmd  + " ".join(self.cmds))
+                        run_cmds.append(sudo_s + "docker exec " + self.host_container + " " + self.sbctl_cmd  + " ".join(self.cmds))
                     else:
-                        run_cmds.append("sudo " + self.sbctl_cmd + " ".join(self.cmds))
+                        run_cmds.append(sudo_s + self.sbctl_cmd + " ".join(self.cmds))
 
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
@@ -457,6 +464,7 @@ class OvsSsh(OvsClient):
     class _OvsSsh(object):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
+            self.is_root = is_root_credential(credential)
             self.batch_mode = False
             self.cmds = None
 
@@ -473,7 +481,8 @@ class OvsSsh(OvsClient):
             self.cmds = self.cmds or []
 
             if self.host_container:
-                self.cmds.append('sudo docker exec ' + self.host_container + ' ' + cmd)
+                sudo_s = "sudo " if not self.is_root else ""
+                self.cmds.append(sudo_s + 'docker exec ' + self.host_container + ' ' + cmd)
             else:
                 self.cmds.append(cmd)
 
@@ -507,6 +516,7 @@ class OvsVsctl(OvsClient):
 
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
+            self.is_root = is_root_credential(credential)
             self.context = {}
             self.batch_mode = False
             self.sandbox = None
@@ -533,18 +543,19 @@ class OvsVsctl(OvsClient):
                 self.cmds.append(" ".join(cmd))
                 return
 
+            sudo_s = "sudo " if not self.is_root else ""
             if self.sandbox and self.batch_mode == False:
                 if self.install_method == "sandbox":
                     self.cmds.append(". %s/sandbox.rc" % self.sandbox)
                 elif self.install_method == "docker":
-                    self.cmds.append("sudo docker exec %s ovs-vsctl " % \
+                    self.cmds.append(sudo_s + "docker exec %s ovs-vsctl " % \
                                      self.sandbox + cmd + \
                                      " " + " ".join(args) + \
                                      " " + " ".join(extras))
 
             if self.install_method != "docker":
                 if self.host_container:
-                    cmd_prefix = ["sudo docker exec " + self.host_container + " ovs-vsctl"]
+                    cmd_prefix = [sudo_s + "docker exec " + self.host_container + " ovs-vsctl"]
                 else:
                     cmd_prefix = ["ovs-vsctl"]
                 cmd = itertools.chain(cmd_prefix, opts, [cmd], args, extras)
@@ -597,6 +608,7 @@ class OvsOfctl(OvsClient):
 
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
+            self.is_root = is_root_credential(credential)
             self.context = {}
             self.sandbox = None
 
@@ -615,7 +627,8 @@ class OvsOfctl(OvsClient):
                     cmds.append(". %s/sandbox.rc" % self.sandbox)
 
             if self.install_method == "physical" and self.host_container:
-                cmd_prefix = ["sudo docker exec " + self.host_container + " ovs-ofctl"]
+                sudo_s = "sudo " if not self.is_root else ""
+                cmd_prefix = [sudo_s + "docker exec " + self.host_container + " ovs-ofctl"]
             else:
                 cmd_prefix = ["ovs-ofctl"]
             cmd = itertools.chain(cmd_prefix, opts, [cmd], args)

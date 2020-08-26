@@ -59,6 +59,9 @@ def get_ssh_client_from_deployment(deployment):
     return get_ssh_from_credential(cred)
 
 
+def is_root_credential(cred):
+    return cred["user"] == "root"
+
 
 def get_random_sandbox(sandboxes):
     info = random.choice(sandboxes)
