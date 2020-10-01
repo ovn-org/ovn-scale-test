@@ -364,20 +364,23 @@ class OvnNorthboundFakeMultinode(OvnFakeMultinode):
         super(OvnNorthboundFakeMultinode, self).__init__(context)
 
     @scenario.configure(context={})
+    def setup_switch_per_node_init(self, fake_multinode_args = {},
+                                   lnetwork_create_args = {}):
+        self.add_chassis_nodes(fake_multinode_args)
+        if lnetwork_create_args.get('gw_router_per_network', False):
+            self.add_chassis_nodes_localnet(fake_multinode_args)
+            self.add_chassis_external_hosts(fake_multinode_args,
+                                            lnetwork_create_args)
+
+    @scenario.configure(context={})
     def setup_switch_per_node(self, fake_multinode_args = {},
                               lswitch_create_args = {},
                               lnetwork_create_args = {},
                               lport_create_args = {},
                               port_bind_args = {},
                               create_mgmt_port = True):
-        self.add_chassis_nodes(fake_multinode_args)
         self.connect_chassis_nodes(fake_multinode_args)
         self.wait_chassis_nodes(fake_multinode_args)
-
-        if lnetwork_create_args.get('gw_router_per_network', False):
-            self.add_chassis_nodes_localnet(fake_multinode_args)
-            self.add_chassis_external_hosts(fake_multinode_args,
-                                            lnetwork_create_args)
 
         lswitch_create_args['amount'] = fake_multinode_args.get('batch_size', 1)
         lswitch_create_args['batch'] = 1
