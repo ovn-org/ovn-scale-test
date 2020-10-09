@@ -161,6 +161,42 @@
             ]
         },
         {
+            "title": "Initialize switch_per_node scenario (setup workload)",
+            "workloads": [
+                {
+                    "name": "OvnNorthboundFakeMultinode.setup_switch_per_node_init",
+                    "args": {
+                        "fake_multinode_args": {
+                            "node_net": "192.16.0.0",
+                            "node_net_len": "16",
+                            "node_prefix": "ovn-farm-node-",
+                            "central_ip": {{ovn_central_ip}},
+                            "cluster_cmd_path": {{cluster_cmd_path}},
+                            "ovn_monitor_all": {{ovn_monitor_all}},
+                            "ovn_cluster_db": {{ovn_cluster_db}},
+                            "max_timeout_s": 10,
+                            "batch_size": {{farm_nodes}}
+                        },
+                        "lnetwork_create_args": {
+                            "start_ext_cidr": "3.0.0.0/16",
+                            "gw_router_per_network": {{gw_router}}
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "ovn_nb": {},
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {
             "title": "Create switch-per-node scenario (setup workload)",
             "workloads": [
                 {
