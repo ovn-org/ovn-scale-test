@@ -36,7 +36,7 @@ class SshClient(OvsClient):
 class OvnNbctl(OvsClient):
 
 
-    class _OvnNbctl(DdCtlMixin):
+    class _OvnNbctl(DdCtlMixin, OvsClientLogger):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
             self.is_root = is_root_credential(credential)
@@ -45,6 +45,7 @@ class OvnNbctl(OvsClient):
             self.batch_mode = False
             self.cmds = None
             self.socket = None
+            self.log_cmd = False
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -94,6 +95,7 @@ class OvnNbctl(OvsClient):
                 cmd = itertools.chain(cmd_prefix, [ovn_cmd], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
 
+            self.log_cmds(" ".join(self.cmds))
             self.ssh.run("\n".join(self.cmds),
                          stdout=stdout, stderr=stderr, raise_on_error=raise_on_error)
 
@@ -125,7 +127,7 @@ class OvnNbctl(OvsClient):
 
                     run_cmds.append("{} {} {}".format(cmd_prefix, ovn_cmd,
                                                       " ".join(self.cmds)))
-
+            self.log_cmds(" ".join(run_cmds))
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
 
@@ -334,7 +336,7 @@ class OvnNbctl(OvsClient):
 @configure("ovn-sbctl")
 class OvnSbctl(OvsClient):
 
-    class _OvnSbctl(DdCtlMixin):
+    class _OvnSbctl(DdCtlMixin, OvsClientLogger):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
             self.is_root = is_root_credential(credential)
@@ -343,6 +345,7 @@ class OvnSbctl(OvsClient):
             self.batch_mode = False
             self.cmds = None
             self.sbctl_cmd = "ovn-sbctl --no-leader-only"
+            self.log_cmd = False
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -377,6 +380,7 @@ class OvnSbctl(OvsClient):
                 cmd = itertools.chain(cmd_prefix, [self.sbctl_cmd], opts, [cmd], args)
                 self.cmds.append(" ".join(cmd))
 
+            self.log_cmds(" ".join(self.cmds))
             self.ssh.run("\n".join(self.cmds),
                          stdout=stdout, stderr=stderr)
 
@@ -401,6 +405,7 @@ class OvnSbctl(OvsClient):
                     else:
                         run_cmds.append(sudo_s + self.sbctl_cmd + " ".join(self.cmds))
 
+            self.log_cmds(" ".join(run_cmds))
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
 
@@ -461,12 +466,13 @@ class OvnSbctl(OvsClient):
 @configure("ovs-ssh")
 class OvsSsh(OvsClient):
 
-    class _OvsSsh(object):
+    class _OvsSsh(OvsClientLogger):
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
             self.is_root = is_root_credential(credential)
             self.batch_mode = False
             self.cmds = None
+            self.log_cmd = False
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -492,6 +498,7 @@ class OvsSsh(OvsClient):
             self.flush(stdout)
 
         def run_immediate(self, cmd, stdout=sys.stdout, stderr=sys.stderr):
+            self.log_cmds(cmd)
             self.ssh.run(cmd, stdout)
 
         def flush(self, stdout=sys.stdout):
@@ -501,6 +508,7 @@ class OvsSsh(OvsClient):
             cmds = "\n".join(self.cmds)
             self.cmds = None
 
+            self.log_cmds(cmds)
             self.ssh.run(cmds, stdout=stdout, stderr=sys.stderr)
 
     def create_client(self):
@@ -512,7 +520,7 @@ class OvsSsh(OvsClient):
 @configure("ovs-vsctl")
 class OvsVsctl(OvsClient):
 
-    class _OvsVsctl(object):
+    class _OvsVsctl(OvsClientLogger):
 
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
@@ -521,6 +529,7 @@ class OvsVsctl(OvsClient):
             self.batch_mode = False
             self.sandbox = None
             self.cmds = None
+            self.log_cmd = False
 
         def enable_batch_mode(self, value=True):
             self.batch_mode = bool(value)
@@ -561,6 +570,7 @@ class OvsVsctl(OvsClient):
                 cmd = itertools.chain(cmd_prefix, opts, [cmd], args, extras)
                 self.cmds.append(" ".join(cmd))
 
+            self.log_cmds(" ".join(self.cmds))
             self.ssh.run("\n".join(self.cmds), stdout=stdout, stderr=stderr)
 
             self.cmds = None
@@ -575,6 +585,7 @@ class OvsVsctl(OvsClient):
                     run_cmds.append(". %s/sandbox.rc" % self.sandbox)
                     run_cmds.append("ovs-vsctl" + " ".join(self.cmds))
 
+            self.log_cmds(" ".join(run_cmds))
             self.ssh.run("\n".join(run_cmds),
                          stdout=sys.stdout, stderr=sys.stderr)
 
@@ -604,13 +615,14 @@ class OvsVsctl(OvsClient):
 @configure("ovs-ofctl")
 class OvsOfctl(OvsClient):
 
-    class _OvsOfctl(object):
+    class _OvsOfctl(OvsClientLogger):
 
         def __init__(self, credential):
             self.ssh = get_ssh_from_credential(credential)
             self.is_root = is_root_credential(credential)
             self.context = {}
             self.sandbox = None
+            self.log_cmd = False
 
         def set_sandbox(self, sandbox, install_method="sandbox",
                         host_container=None):
@@ -633,6 +645,8 @@ class OvsOfctl(OvsClient):
                 cmd_prefix = ["ovs-ofctl"]
             cmd = itertools.chain(cmd_prefix, opts, [cmd], args)
             cmds.append(" ".join(cmd))
+
+            self.log_cmds(" ".join(cmds))
             self.ssh.run("\n".join(cmds),
                          stdout=stdout, stderr=stderr)
 

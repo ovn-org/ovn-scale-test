@@ -40,6 +40,7 @@ class OvnIGMP(ovn_network.OvnNetwork):
         for iteration in range(0, 60):
             LOG.info('Iteration {}'.format(iteration))
             ovn_sbctl = self.controller_client("ovn-sbctl")
+            ovn_sbctl.set_log_cmd(self.context.get("log_cmd", False))
             igmp_flow_count = 0
             for lswitch in lswitches:
                 igmp_flow_count += ovn_sbctl.count_igmp_flows(lswitch['name'])
@@ -147,6 +148,7 @@ class OvnIGMP(ovn_network.OvnNetwork):
 
         # Avoid lazy connection creation:
         ovn_sbctl = self.controller_client("ovn-sbctl")
+        ovn_sbctl.set_log_cmd(self.context.get("log_cmd", False))
 
         # Build configuration for each port for each iteration
         iterations = self._build_config_testers(lswitches, all_lports,
