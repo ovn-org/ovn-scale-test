@@ -324,6 +324,7 @@
                     "context": {
                        "sandbox": {"tag": "ToR1"},
                        "ovn_multihost" : {
+                            "log_cmd": True,
                             "controller": "ovn-controller-node"
                        },
                        "ovn_nb": {},

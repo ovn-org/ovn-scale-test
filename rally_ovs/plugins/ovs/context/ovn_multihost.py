@@ -59,6 +59,7 @@ class OvnMultihost(context.Context):
         "type": "object",
         "$schema": consts.JSON_SCHEMA,
         "properties": {
+            "log_cmd": {"type": "boolean"},
         },
         "additionalProperties": True
     }
@@ -88,6 +89,7 @@ class OvnMultihost(context.Context):
 
 
         self.context["controller"] = res["info"]
+        self.context["log_cmd"] = self.config.get("log_cmd", False)
 
 
 

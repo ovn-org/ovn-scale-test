@@ -53,6 +53,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_ssh = self.farm_clients(farm, "ovs-ssh")
             ovs_ssh.set_sandbox(sb_name, self.install_method,
                                 sandbox["host_container"])
+            ovs_ssh.set_log_cmd(self.context.get("log_cmd", False))
             ovs_ssh.enable_batch_mode()
             self._ssh_conns[sb_name] = ovs_ssh
 
@@ -437,6 +438,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
             ovs_vsctl.set_sandbox(sb_name, self.install_method,
                                   sandbox['host_container'])
+            ovs_vsctl.set_log_cmd(self.context.get("log_cmd", False))
             ovs_vsctl.enable_batch_mode()
             for lport in lports:
                 port_name = lport["name"]
@@ -457,6 +459,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_ssh = self.farm_clients(farm, "ovs-ssh")
             ovs_ssh.set_sandbox(sb_name, self.install_method,
                                 sandbox['host_container'])
+            ovs_ssh.set_log_cmd(self.context.get("log_cmd", False))
             for lport in lports:
                 port_name = lport["name"]
                 port_mac = lport["mac"]
@@ -500,11 +503,13 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
 
         ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
         ovs_vsctl.set_sandbox(sandbox, self.install_method, host_container)
+        ovs_vsctl.set_log_cmd(self.context.get("log_cmd", False))
         ovs_vsctl.run("find interface type=internal", ["--bare", "--columns", "name"], stdout=stdout)
         output = stdout.getvalue()
 
         ovs_ssh = self.farm_clients(farm, "ovs-ssh")
         ovs_ssh.set_sandbox(sb_name, self.install_method, host_container)
+        ovs_ssh.set_log_cmd(self.context.get("log_cmd", False))
 
         for name in list(filter(None, output.splitlines())):
             if "lp" not in name:
@@ -520,10 +525,12 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_ssh = self.farm_clients(farm, "ovs-ssh")
             ovs_ssh.set_sandbox(sb_name, self.install_method,
                                 host_container)
+            ovs_ssh.set_log_cmd(self.context.get("log_cmd", False))
             ovs_ssh.enable_batch_mode()
             ovs_vsctl = self.farm_clients(farm, "ovs-vsctl")
             ovs_vsctl.set_sandbox(sandbox, self.install_method,
                                   host_container)
+            ovs_vsctl.set_log_cmd(self.context.get("log_cmd", False))
             ovs_vsctl.enable_batch_mode()
             conns[sb_name] = (ovs_ssh, ovs_vsctl)
 
@@ -572,6 +579,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovs_ssh = self.farm_clients(sandbox["farm"], "ovs-ssh")
         ovs_ssh.set_sandbox(sandbox, self.install_method,
                             sandbox['host_container'])
+        ovs_ssh.set_log_cmd(self.context.get("log_cmd", False))
         ovs_ssh.enable_batch_mode(False)
 
         if lport.get("ext-gw"):
@@ -636,6 +644,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
             ovs_ofctl = self.farm_clients(farm, "ovs-ofctl")
             ovs_ofctl.set_sandbox(sandbox_name, self.install_method,
                                   host_container)
+            ovs_ofctl.set_log_cmd(self.context.get("log_cmd", False))
             bridge = sandbox_args.get('bridge', 'br-int')
             lflow_count = ovs_ofctl.dump_flows(bridge)
 
@@ -716,6 +725,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ssh = self.farm_clients(sandbox["farm"], "ovs-ssh")
         ssh.set_sandbox(sandbox["name"], self.install_method,
                         sandbox["host_container"])
+        ssh.set_log_cmd(self.context.get("log_cmd", False))
 
         if pid_proc_name:
             pid = self.runCmd(ssh, "pidof -s " + pid_proc_name)
@@ -731,6 +741,7 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ssh = self.controller_client("ovs-ssh")
         ssh.set_sandbox("controller-sandbox", self.install_method,
                         self.context["controller"]["host_container"])
+        ssh.set_log_cmd(self.context.get("log_cmd", False))
 
         if pid_proc_name:
             pid = self.runCmd(ssh, "pidof -s " + pid_proc_name)

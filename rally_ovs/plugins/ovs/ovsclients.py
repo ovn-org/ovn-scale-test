@@ -17,6 +17,7 @@ import collections
 import six
 import re
 import netaddr
+import logging
 
 from rally.common.plugin import plugin
 from rally.task import scenario
@@ -25,11 +26,18 @@ from io import StringIO
 
 _NAMESPACE = "ovs"
 
+LOG = logging.getLogger(__name__)
 
 def configure(name):
     return plugin.configure(name, namespace=_NAMESPACE)
 
+class OvsClientLogger(object):
+    def set_log_cmd(self, log_cmd=False):
+        self.log_cmd = log_cmd
 
+    def log_cmds(self, cmds):
+        if self.log_cmd:
+            LOG.info(cmds)
 
 class OvsClient(plugin.Plugin):
     def __init__(self, credential, cache_obj):

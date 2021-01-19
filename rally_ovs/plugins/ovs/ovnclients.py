@@ -30,6 +30,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         ovn_nbctl.set_sandbox("controller-sandbox", install_method,
                               self.context['controller']['host_container'])
         ovn_nbctl.set_daemon_socket(self.context.get("daemon_socket", None))
+        ovn_nbctl.set_log_cmd(self.context.get("log_cmd", False))
         return ovn_nbctl
 
     def _start_daemon(self, nbctld_config):

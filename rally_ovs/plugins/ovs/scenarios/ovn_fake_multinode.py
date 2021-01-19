@@ -39,6 +39,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
         farm = sb["farm"]
         ssh = self.farm_clients(farm, "ovs-ssh")
         ssh.set_sandbox(sb_name, self.install_method, host_container)
+        ssh.set_log_cmd(self.context.get("log_cmd", False))
         ssh.enable_batch_mode(False)
         return ssh
 
@@ -142,6 +143,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
     def add_central_node(self, fake_multinode_args = {}):
         ssh = self.controller_client("ovs-ssh")
         ssh.set_sandbox("controller-sandbox", self.install_method)
+        ssh.set_log_cmd(self.context.get("log_cmd", False))
         ssh.enable_batch_mode(False)
 
         node_net = fake_multinode_args.get("node_net")
@@ -198,6 +200,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ovn_sbctl.set_sandbox("controller-sandbox", self.install_method,
                               self.context['controller']['host_container'])
         ovn_sbctl.enable_batch_mode(False)
+        ovn_sbctl.set_log_cmd(self.context.get("log_cmd", False))
         self._wait_chassis(ovn_sbctl, node_name, max_timeout_s)
 
     @scenario.configure(context={})
@@ -216,6 +219,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
     def del_central_node(self, fake_multinode_args = {}):
         ssh = self.controller_client("ovs-ssh")
         ssh.set_sandbox("controller-sandbox", self.install_method)
+        ssh.set_log_cmd(self.context.get("log_cmd", False))
         ssh.enable_batch_mode(False)
 
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
@@ -293,6 +297,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ovn_sbctl.set_sandbox("controller-sandbox", self.install_method,
                               self.context['controller']['host_container'])
         ovn_sbctl.enable_batch_mode(False)
+        ovn_sbctl.set_log_cmd(self.context.get("log_cmd", False))
         for i in range(batch_size):
             index = iteration * batch_size + i
 
