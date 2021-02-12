@@ -9,6 +9,8 @@
 {% set cluster_cmd_path = cluster_cmd_path or "/root/ovn-fake-testing/ovn-fake-multinode" %}
 {% set node_batch_size = node_batch_size or 1 %}
 {% set sla = sla or 30 %}
+{% set use_dp_groups = use_dp_groups or True %}
+{% set sb_raft_election_to = sb_raft_election_to or 1 %}
 {
     "version": 2,
     "title": "Switch per node workload",
@@ -160,6 +162,62 @@
                 }
             ]
         },
+        {
+            "title": "Configure dp_groups",
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.ovn_run_command",
+                    "args": {
+                        "ext_cmd_args": {
+                            "start_cmd" : {
+                                "iter" : 0,
+                                "cmd": "ovn-nbctl --no-leader-only set NB_Global . options:use_logical_dp_groups={{use_dp_groups}}",
+                                "controller_pid_name": "ovn-northd",
+                            }
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% for timeout in range(1000, (sb_raft_election_to + 1) * 1000, 1000) %}
+        {
+            "title": "Configure RAFT election timeout",
+            "workloads": [
+                {
+                    "name": "OvnNorthbound.ovn_run_command",
+                    "args": {
+                        "ext_cmd_args": {
+                            "start_cmd" : {
+                                "iter" : 0,
+                                "cmd": "ovs-appctl -t /run/ovn/ovnsb_db.ctl cluster/change-election-timer OVN_Southbound {{timeout}}",
+                                "controller_pid_name": "ovn-northd",
+                            }
+                        }
+                    },
+                    "runner": {
+                        "type": "serial",
+                        "times": 1
+                    },
+                    "context": {
+                        "ovn_multihost": {
+                            "controller": "ovn-controller-node"
+                        },
+                        "sandbox": { "tag": "ToR1" }
+                    }
+                }
+            ]
+        },
+        {% endfor %}
         {
             "title": "Initialize switch_per_node scenario (setup workload)",
             "workloads": [
