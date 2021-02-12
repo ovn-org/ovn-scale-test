@@ -235,17 +235,21 @@ class OvnNorthbound(ovn.OvnScenario):
         lswitch = lswitches[iteration % len(lswitches)]
         ip_start_index = iteration / len(lswitches) + ip_offset
 
+        self.ovn_run_command(ext_cmd_args)
+        self.configure_routed_lport(lswitch, lport_create_args,
+                                    port_bind_args, ip_start_index,
+                                    name_space_size, network_policy_size,
+                                    create_acls)
+
+    @scenario.configure()
+    def ovn_run_command(self, ext_cmd_args = {}):
+        iteration = self.context["iteration"]
         start_cmd = ext_cmd_args.get("start_cmd", None)
         if start_cmd and iteration == start_cmd.get("iter", -1):
                self.handle_cmd(start_cmd)
         stop_cmd = ext_cmd_args.get("stop_cmd", None)
         if stop_cmd and iteration == stop_cmd.get("iter", -1):
                self.handle_cmd(stop_cmd)
-
-        self.configure_routed_lport(lswitch, lport_create_args,
-                                    port_bind_args, ip_start_index,
-                                    name_space_size, network_policy_size,
-                                    create_acls)
 
     @scenario.configure()
     def handle_cmd(self, cmd_args = {}):
