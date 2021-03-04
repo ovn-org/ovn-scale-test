@@ -11,6 +11,7 @@
 {% set sla = sla or 30 %}
 {% set use_dp_groups = use_dp_groups or True %}
 {% set sb_raft_election_to = sb_raft_election_to or 1 %}
+{% set batch = batch or 1 %}
 {
     "version": 2,
     "title": "Switch per node workload",
@@ -360,7 +361,7 @@
                     "name": "OvnNorthbound.create_routed_lport",
                     "args": {
                         "lport_create_args": {
-                            "batch" : 1,
+                            "batch" : {{batch}},
                             "port_security" : true,
                             "ip_offset" : 2
                         },
@@ -368,13 +369,13 @@
                             "internal" : true,
                             "wait_up" : true,
                             "wait_sync" : "ping",
-                            "batch" : false
+                            "batch" : true
                         },
                         "create_acls": true
                     },
                     "runner": {
                         "type": "serial",
-                        "times": {{ports_per_network}}
+                        "times": {{ports_per_network // batch}}
                     },
                     "sla": {
                         "max_seconds_per_iteration": {{sla}}

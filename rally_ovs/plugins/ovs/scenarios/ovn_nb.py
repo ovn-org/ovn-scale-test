@@ -83,9 +83,9 @@ class OvnNorthbound(ovn.OvnScenario):
         self._create_acl(port_group, [port_group_acl], acl_create_args, 1,
                          atomic_action = False)
 
-    def create_or_update_default_deny_port_group(self, port_list):
+    def create_or_update_default_deny_port_group(self, index, port_list):
         # default_deny port_group
-        if (self.context["iteration"] == 0):
+        if (index == 0):
             self._port_group_add("portGroupDefDeny", port_list, atomic_action = False)
 
             # create defualt acl for ingress and egress traffic: only allow ARP traffic
@@ -117,9 +117,9 @@ class OvnNorthbound(ovn.OvnScenario):
             self._port_group_add_port("portGroupDefDeny", port_list,
                                       atomic_action = False)
 
-    def create_or_update_default_deny_multicast_port_group(self, port_list):
+    def create_or_update_default_deny_multicast_port_group(self, index, port_list):
         # default_multicast_deny port_group
-        if (self.context["iteration"] == 0):
+        if (index == 0):
             self._port_group_add("portGroupMultiDefDeny", port_list, atomic_action = False)
 
             # create defualt acl for ingress and egress multicast traffic: drop all multicast
@@ -173,9 +173,9 @@ class OvnNorthbound(ovn.OvnScenario):
 
     @atomic.action_timer("ovn.create_or_update_network_policy")
     def create_or_update_network_policy(self, name, port_list,
-                                        ipaddr, create = True):
-        self.create_or_update_default_deny_port_group(port_list)
-        self.create_or_update_default_deny_multicast_port_group(port_list)
+                                        index, ipaddr, create = True):
+        self.create_or_update_default_deny_port_group(index, port_list)
+        self.create_or_update_default_deny_multicast_port_group(index, port_list)
 
         if (create):
             self._port_group_add(name, port_list, atomic_action = False)
@@ -189,7 +189,9 @@ class OvnNorthbound(ovn.OvnScenario):
     def configure_routed_lport(self, lswitch, lport_create_args, port_bind_args,
                                ip_start_index = 0, name_space_size = 1,
                                network_policy_size = 1, create_acls = True):
+        batch = lport_create_args.get("batch", 1)
         lports = self._create_switch_lports(lswitch, lport_create_args,
+                                            lport_amount = batch,
                                             lport_ip_shift = ip_start_index)
 
         if create_acls:
@@ -200,22 +202,23 @@ class OvnNorthbound(ovn.OvnScenario):
             else:
                 ipaddr = ""
 
-            lport = lports[0]
-            iteration = self.context["iteration"]
+            for i in range(batch):
+                lport = lports[i]
+                index = batch * self.context["iteration"] + i
 
-            # create/update network policy
-            network_policy_index = iteration / network_policy_size
-            create_network_policy = (iteration % network_policy_size) == 0
-            port_group_name = "networkPolicy%d" % network_policy_index
-            self.create_or_update_network_policy(port_group_name, lport["name"],
-                                                 ipaddr, create_network_policy)
+                # create/update network policy
+                network_policy_index = index / network_policy_size
+                create_network_policy = (index % network_policy_size) == 0
+                port_group_name = "networkPolicy%d" % network_policy_index
+                self.create_or_update_network_policy(port_group_name, lport["name"],
+                                                     index, ipaddr, create_network_policy)
 
-            # create/update namespace
-            name_space_index = iteration / name_space_size
-            create_name_space = (iteration % name_space_size) == 0
-            address_set_name = "nameSpace%d" % name_space_index
-            self.create_or_update_name_space(address_set_name, lport["name"],
-                                             ipaddr, create_name_space)
+                # create/update namespace
+                name_space_index = index / name_space_size
+                create_name_space = (index % name_space_size) == 0
+                address_set_name = "nameSpace%d" % name_space_index
+                self.create_or_update_name_space(address_set_name, lport["name"],
+                                                 ipaddr, create_name_space)
 
         sandboxes = self.context["sandboxes"]
         sandbox = sandboxes[self.context["iteration"] % len(sandboxes)]
@@ -232,8 +235,9 @@ class OvnNorthbound(ovn.OvnScenario):
         ip_offset = lport_create_args.get("ip_offset", 1) if lport_create_args else 1
 
         iteration = self.context["iteration"]
+        batch = lport_create_args.get("batch", 1)
         lswitch = lswitches[iteration % len(lswitches)]
-        ip_start_index = iteration / len(lswitches) + ip_offset
+        ip_start_index = (iteration * batch) / len(lswitches) + ip_offset
 
         self.ovn_run_command(ext_cmd_args)
         self.configure_routed_lport(lswitch, lport_create_args,
