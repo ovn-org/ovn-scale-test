@@ -172,6 +172,29 @@ def parse_lswitch_list(lswitch_data):
         lswitches.append({"name": line.split(" ")[1].strip('()')})
     return lswitches
 
+def get_lb_info(info):
+    lbs = {}
+
+    lb_name = None
+    for line in info.splitlines():
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        
+        if not lb_name:
+            lb_name = line
+        else:
+            tokens = line.split('=')
+            if len(tokens) == 0:
+                lb_name = None
+                continue
+            lb_vip = tokens[0]
+            lb_backends = tokens[1] if len(tokens) == 2 else ''
+            lbs[lb_name] = (lb_vip, lb_backends)
+            lb_name = None
+
+    return lbs
+
 def set_colval_args(*col_values):
     args = []
     for entry in col_values:

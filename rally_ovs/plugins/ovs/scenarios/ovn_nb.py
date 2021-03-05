@@ -410,4 +410,6 @@ class OvnNorthbound(ovn.OvnScenario):
         self._create_address_set(name, address_list)
         self._remove_address_set(name)
 
-
+    @scenario.configure(context={})
+    def create_load_balancer(self, lb_name, lb_vip, lb_proto):
+        self._create_load_balancer(lb_name, lb_vip, lb_proto)

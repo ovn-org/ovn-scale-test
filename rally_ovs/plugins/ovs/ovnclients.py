@@ -75,8 +75,12 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
             if start_cidr:
                 cidr = start_cidr.next(i)
                 name = "lswitch_%s" % cidr
+                lb_backend = '{}:4242'.format(netaddr.IPAddress(cidr) + 1)
+                self._add_lswitch_load_balancers(lb_backend)
+                lbs = list(self.context["ovn-nb-lbs"].keys())
             else:
                 name = self.generate_random_name()
+                lbs = []
 
             other_cfg = {
                 'mcast_snoop': mcast_snoop,
@@ -84,7 +88,7 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
                 'mcast_table_size': mcast_table_size
             }
 
-            lswitch = ovn_nbctl.lswitch_add(name, other_cfg)
+            lswitch = ovn_nbctl.lswitch_add(name, other_cfg, lbs)
             if start_cidr:
                 lswitch["cidr"] = cidr
 
@@ -100,6 +104,15 @@ class OvnClientMixin(ovsclients.ClientsMixin, RandomNameGeneratorMixin):
         ovn_nbctl.flush() # ensure all commands be run
         ovn_nbctl.enable_batch_mode(False)
         return lswitches
+
+    def _add_lswitch_load_balancers(self, backend):
+        lbs = []
+        for lb_name, (lb_vip, lb_backends) in self.context["ovn-nb-lbs"].items():
+            new_backends = self._add_load_balancer_backend(lb_name, lb_vip, lb_backends, backend)
+            lbs.append((lb_name, lb_vip, new_backends))
+
+        for lb_name, lb_vip, new_backends in lbs:
+            self.context["ovn-nb-lbs"][lb_name] = (lb_vip, new_backends)
 
     def _create_routers(self, router_create_args):
         self.RESOURCE_NAME_FORMAT = "lrouter_XXXXXX_XXXXXX"

@@ -41,8 +41,10 @@ class OvnNorthboundContext(ovnclients.OvnClientMixin, context.Context):
 
         ovn_nbctl = self._get_ovn_controller(self.install_method)
         lswitches = ovn_nbctl.show()
+        load_balancers = ovn_nbctl.lb_list()
 
         self.context["ovn-nb"] = lswitches
+        self.context["ovn-nb-lbs"] = load_balancers
         self.context["ovs-internal-ports"] = {}
 
     @logging.log_task_wrapper(LOG.info, _("Exit context: `ovn_nb`"))

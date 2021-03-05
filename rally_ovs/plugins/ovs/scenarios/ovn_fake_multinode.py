@@ -418,6 +418,11 @@ class OvnNorthboundFakeMultinode(OvnFakeMultinode):
                               lport_create_args = {},
                               port_bind_args = {},
                               create_mgmt_port = True):
+        # TODO: figure out how to not reload the context?
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
+        lswitches = ovn_nbctl.show()
+        self.context["ovn-nb-lbs"] = ovn_nbctl.lb_list()
+
         self.connect_chassis_nodes(fake_multinode_args)
         self.wait_chassis_nodes(fake_multinode_args)
 
