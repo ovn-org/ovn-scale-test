@@ -198,13 +198,17 @@ class OvnNorthbound(ovn.OvnScenario):
             network_cidr = lswitch.get("cidr", None)
             if network_cidr:
                 ip_list = netaddr.IPNetwork(network_cidr.ip + ip_start_index).iter_hosts()
-                ipaddr = str(next(ip_list))
+                ip = next(ip_list)
             else:
-                ipaddr = ""
+                ip = None
 
+            ipaddr = ""
             for i in range(batch):
                 lport = lports[i]
                 index = batch * self.context["iteration"] + i
+                if ip:
+                    ipaddr = str(ip)
+                    ip += 1
 
                 # create/update network policy
                 network_policy_index = index / network_policy_size
