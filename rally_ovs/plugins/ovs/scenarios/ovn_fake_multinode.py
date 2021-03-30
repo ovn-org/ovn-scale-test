@@ -44,7 +44,8 @@ class OvnFakeMultinode(ovn.OvnScenario):
         return ssh
 
     def _add_central(self, ssh_conn, node_net, node_net_len, node_ip,
-                     ovn_fake_path, monitor_all=False, cluster_db=False):
+                     ovn_fake_path, monitor_all=False, cluster_db=False,
+                     dp_type="system"):
         if monitor_all:
             monitor_cmd = "OVN_MONITOR_ALL=yes"
         else:
@@ -55,15 +56,19 @@ class OvnFakeMultinode(ovn.OvnScenario):
         else:
             cluster_db_cmd = "OVN_DB_CLUSTER=no"
 
-        cmd = "cd {} && CHASSIS_COUNT=0 GW_COUNT=0 IP_HOST={} IP_CIDR={} IP_START={} {} {} CREATE_FAKE_VMS=no ./ovn_cluster.sh start".format(
-            ovn_fake_path, node_net, node_net_len, node_ip, monitor_cmd, cluster_db_cmd
+        dp_type_cmd = "OVN_DP_TYPE={}".format(dp_type)
+
+        cmd = "cd {} && CHASSIS_COUNT=0 GW_COUNT=0 IP_HOST={} IP_CIDR={} IP_START={} {} {} {} CREATE_FAKE_VMS=no ./ovn_cluster.sh start".format(
+            ovn_fake_path, node_net, node_net_len, node_ip, monitor_cmd,
+            cluster_db_cmd, dp_type_cmd
         )
         ssh_conn.run(cmd)
 
         time.sleep(5)
 
     def _add_chassis(self, ssh_conn, node_net, node_net_len, node_ip, node_name,
-                     ovn_fake_path, monitor_all=False, cluster_db=False):
+                     ovn_fake_path, monitor_all=False, cluster_db=False,
+                     dp_type="system"):
         invalid_remote = "tcp:0.0.0.1:6642"
         if monitor_all:
             monitor_cmd = "OVN_MONITOR_ALL=yes"
@@ -74,10 +79,12 @@ class OvnFakeMultinode(ovn.OvnScenario):
             cluster_db_cmd = "OVN_DB_CLUSTER=yes"
         else:
             cluster_db_cmd = "OVN_DB_CLUSTER=no"
+        
+        dp_type_cmd = "OVN_DP_TYPE={}".format(dp_type)
 
-        cmd = "cd {} && IP_HOST={} IP_CIDR={} IP_START={} {} {} ./ovn_cluster.sh add-chassis {} {}".format(
-            ovn_fake_path, node_net, node_net_len, node_ip, monitor_cmd, cluster_db_cmd,
-            node_name, invalid_remote
+        cmd = "cd {} && IP_HOST={} IP_CIDR={} IP_START={} {} {} {} ./ovn_cluster.sh add-chassis {} {}".format(
+            ovn_fake_path, node_net, node_net_len, node_ip, monitor_cmd,
+            cluster_db_cmd, dp_type_cmd, node_name, invalid_remote
         )
         ssh_conn.run(cmd)
 
@@ -152,9 +159,10 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
         monitor_all = fake_multinode_args.get("ovn_monitor_all")
         cluster_db = fake_multinode_args.get("ovn_cluster_db")
+        dp_type = fake_multinode_args.get("ovn_dp_type")
 
         self._add_central(ssh, node_net, node_net_len, node_ip, ovn_fake_path,
-                          monitor_all, cluster_db)
+                          monitor_all, cluster_db, dp_type)
 
     @scenario.configure(context={})
     @atomic.action_timer("OvnFakeMultinode.add_chassis_node")
@@ -170,9 +178,10 @@ class OvnFakeMultinode(ovn.OvnScenario):
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
         monitor_all = fake_multinode_args.get("ovn_monitor_all")
         cluster_db = fake_multinode_args.get("ovn_cluster_db")
+        dp_type = fake_multinode_args.get("ovn_dp_type")
 
         self._add_chassis(ssh, node_net, node_net_len, node_ip, node_name,
-                          ovn_fake_path, monitor_all, cluster_db)
+                          ovn_fake_path, monitor_all, cluster_db, dp_type)
 
     @scenario.configure(context={})
     @atomic.action_timer("OvnFakeMultinode.connect_chassis_node")
@@ -250,6 +259,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
         monitor_all = fake_multinode_args.get("ovn_monitor_all")
         cluster_db = fake_multinode_args.get("ovn_cluster_db")
         ovn_fake_path = fake_multinode_args.get("cluster_cmd_path")
+        dp_type = fake_multinode_args.get("ovn_dp_type")
 
         for i in range(batch_size):
             index = iteration * batch_size + i
@@ -261,7 +271,7 @@ class OvnFakeMultinode(ovn.OvnScenario):
             node_name = sb["host_container"]
 
             self._add_chassis(ssh, node_net, node_net_len, node_ip, node_name,
-                              ovn_fake_path, monitor_all, cluster_db)
+                              ovn_fake_path, monitor_all, cluster_db, dp_type)
 
     @scenario.configure(context={})
     @atomic.action_timer("OvnFakeMultinode.connect_chassis_nodes")

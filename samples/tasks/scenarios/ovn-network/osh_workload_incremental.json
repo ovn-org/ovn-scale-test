@@ -5,6 +5,7 @@
 {% set gw_batch_ops = gw_batch_ops or False %}
 {% set ovn_monitor_all = ovn_monitor_all or false %}
 {% set ovn_cluster_db = ovn_cluster_db or false %}
+{% set ovn_dp_type = ovn_dp_type or "system" %}
 {% set ovn_central_ip = ovn_central_ip or "192.16.0.1" %}
 {% set cluster_cmd_path = cluster_cmd_path or "/root/ovn-fake-testing/ovn-fake-multinode" %}
 {% set node_batch_size = node_batch_size or 1 %}
@@ -147,7 +148,8 @@
                             "node_ip": "192.16.0.1",
                             "cluster_cmd_path": {{cluster_cmd_path}},
                             "ovn_monitor_all": {{ovn_monitor_all}},
-                            "ovn_cluster_db": {{ovn_cluster_db}}
+                            "ovn_cluster_db": {{ovn_cluster_db}},
+                            "ovn_dp_type": "{{ovn_dp_type}}"
                         }
                     },
                     "runner": {
@@ -233,6 +235,7 @@
                             "cluster_cmd_path": {{cluster_cmd_path}},
                             "ovn_monitor_all": {{ovn_monitor_all}},
                             "ovn_cluster_db": {{ovn_cluster_db}},
+                            "ovn_dp_type": "{{ovn_dp_type}}",
                             "max_timeout_s": 10,
                             "batch_size": {{farm_nodes}}
                         },
@@ -269,6 +272,7 @@
                             "cluster_cmd_path": {{cluster_cmd_path}},
                             "ovn_monitor_all": {{ovn_monitor_all}},
                             "ovn_cluster_db": {{ovn_cluster_db}},
+                            "ovn_dp_type": "{{ovn_dp_type}}",
                             "max_timeout_s": 10,
                             "batch_size": {{node_batch_size}}
                         },
