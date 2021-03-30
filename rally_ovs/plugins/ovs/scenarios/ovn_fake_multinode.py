@@ -22,6 +22,30 @@ import netaddr
 
 This scenario is applicable for clusters deployed using:
 https://github.com/ovn-org/ovn-fake-multinode
+
+ovn-fake-multinode scenario configuration options:
+- node_net: fake node underlay subnet.
+- node_net_len: fake node underlay subnet mask length.
+- node_ip: fake node underlay IP (must be in the subnet defined above).
+- node_prefix: fake node prefix from which IPs are generated if batching
+  is enabled.
+- batch_size: number of fake nodes to provision in a single iteration.
+- central_ip: SB remote to which chassis nodes connect to.
+- sb_proto: protocol to be used by chassis nodes when connecting to SB.
+- cluster_cmd_path: path to ovn-fake-multinode utilities.
+- ovn_monitor_all: set to true to disable conditional monitoring or not between
+  fake nodes and the Southbound.
+- ovn_cluster_db: set to true to enable RAFT clustering for NB/SB databases.
+- ovn_dp_type: controls the type of OVS datapath to be used.  Possible values
+  are 'system' (for the kernel datapath), 'netdev' (for the userspace
+  datapath).
+  See 'datapath_type' in:
+  https://man7.org/linux/man-pages/man5/ovs-vswitchd.conf.db.5.html#Bridge_TABLE
+- max_timeout_s: maximum time to wait for a new chassis to register itself in
+  the SB.
+- gw_router_per_network: set to true for testing external connectivity through
+  a gateway router provisioned for each fake node.
+- physnet: Name of the provider bridge when testing external connectivity.
 """
 class OvnFakeMultinode(ovn.OvnScenario):
 
