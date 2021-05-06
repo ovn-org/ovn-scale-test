@@ -37,8 +37,8 @@ class TaskCommands(task.TaskCommands):
                    help="Path to the file with input task args (dict in "
                         "JSON/YAML). These args are used "
                         "to render the Jinja2 template in the input task.")
-    @envutils.with_default_deployment(cli_arg_name="deployment")
     @plugins.ensure_plugins_are_loaded
+    @envutils.with_default_deployment(cli_arg_name="deployment")
     def validate(self, task, deployment=None, task_args=None,
                  task_args_file=None):
         return super(TaskCommands, self).validate(task, deployment,
@@ -60,8 +60,8 @@ class TaskCommands(task.TaskCommands):
     @cliutils.args("--tag", help="Tag for this task")
     @cliutils.args("--no-use", action="store_false", dest="do_use",
                    help="Don't set new task as default for future operations.")
-    @envutils.with_default_deployment(cli_arg_name="deployment")
     @plugins.ensure_plugins_are_loaded
+    @envutils.with_default_deployment(cli_arg_name="deployment")
     def start(self, task, deployment=None, task_args=None, task_args_file=None,
               tag=None, do_use=False, abort_on_sla_failure=False):
         return super(TaskCommands, self).start(task, deployment, task_args,

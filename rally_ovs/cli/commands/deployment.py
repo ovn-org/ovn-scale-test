@@ -82,8 +82,8 @@ class DeploymentCommands(object):
     @cliutils.args("--deployment", dest="deployment", type=str,
                    metavar="<uuid>", required=False,
                    help="UUID or name of the deployment.")
-    @envutils.with_default_deployment()
     @plugins.ensure_plugins_are_loaded
+    @envutils.with_default_deployment()
     def recreate(self, deployment=None):
         """Destroy and create an existing deployment.
 
@@ -98,8 +98,8 @@ class DeploymentCommands(object):
     @cliutils.args("--deployment", dest="deployment", type=str,
                    metavar="<uuid>", required=False,
                    help="UUID or name of the deployment.")
-    @envutils.with_default_deployment()
     @plugins.ensure_plugins_are_loaded
+    @envutils.with_default_deployment()
     def destroy(self, deployment=None):
         """Destroy existing deployment.
 
