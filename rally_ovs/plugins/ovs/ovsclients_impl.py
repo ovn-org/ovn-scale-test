@@ -163,11 +163,11 @@ class OvnNbctl(OvsClient):
             params = [lrouter, nat_type, external_ip, logical_ip]
             self.run("lr-nat-add", args=params)
 
-        def lswitch_add(self, name, other_cfg={}):
-            params = [name]
+        def lswitch_add(self, name, other_cfg={}, lbs=[]):
+            self.run("ls-add", args=[name])
 
-
-            self.run("ls-add", args=params)
+            for lb in lbs:
+                self.run("ls-lb-add", args=[name, lb])
 
             for cfg, val in other_cfg.items():
                 param_cfg = 'other_config:{c}="{v}"'.format(c=cfg, v=val)
@@ -281,6 +281,26 @@ class OvnNbctl(OvsClient):
         def port_group_del(self, port_group):
             params = [port_group]
             self.run("pg-del", [], params)
+
+        def lb_add(self, lb_name, lb_vip, lb_proto):
+            params = [lb_name, lb_vip, '\'\'', lb_proto]
+            self.run("lb-add", [], params)
+        
+        def lb_set_vip_backends(self, lb_name, lb_vip, lb_backends):
+            vips_set='vips=\'\"{}\"=\"{}\"\''.format(lb_vip, lb_backends)
+            params = ['Load_Balancer', lb_name, vips_set]
+            self.run('set', args=params)
+
+        def lb_list(self, lb_name=None):
+            opts = ['--bare', '--columns', 'name,vips']
+            params = ['Load_Balancer']
+            if lb_name:
+                params.append(lb_name)
+            stdout = StringIO()
+            self.run('list', opts=opts, args=params, stdout=stdout)
+            output = stdout.getvalue()
+
+            return get_lb_info(output)
 
         def show(self, lswitch=None):
             params = [lswitch] if lswitch else []

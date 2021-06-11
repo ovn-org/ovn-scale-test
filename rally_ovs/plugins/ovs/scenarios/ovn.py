@@ -705,6 +705,25 @@ class OvnScenario(ovnclients.OvnClientMixin, scenario.OvsScenario):
         ovn_nbctl = self._get_ovn_controller(self.install_method)
         return ovn_nbctl.get("Address_Set", set_name, 'addresses')
 
+    @atomic.action_timer("ovn.create_load_balancer")
+    def _create_load_balancer(self, lb_name, lb_vip, lb_proto):
+        LOG.info('Create load balancer method: %s' % self.install_method)
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
+        ovn_nbctl.lb_add(lb_name, lb_vip, lb_proto)
+        self.context["ovn-nb-lbs"][lb_name] = lb_vip
+
+    @atomic.action_timer("ovn.add_load_balancer_backend")
+    def _add_load_balancer_backend(self, lb_name, lb_vip, lb_backends, lb_backend):
+        LOG.info('Add load balancer backend method: %s' % self.install_method)
+
+        if lb_backends != '':
+            backends = '{},{}'.format(lb_backends, lb_backend)
+        else:
+            backends = '{}'.format(lb_backend)
+        ovn_nbctl = self._get_ovn_controller(self.install_method)
+        ovn_nbctl.lb_set_vip_backends(lb_name, lb_vip, backends)
+        return backends
+
     def runCmd(self, ssh, cmd="", pid_opt="", pid="", background_opt=False):
         ssh.enable_batch_mode(False)
 
